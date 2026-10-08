@@ -46,7 +46,7 @@ Phone width, light and dark.
 - Light and dark mode. The toggle is remembered. With no saved choice, the app follows the system theme. Motion follows `prefers-reduced-motion`.
 - A PDF report of the score.
 - Local history of score lookups, in SQLite by default or MySQL when you select it.
-- A small "by Ulric studio" credit in the footer.
+- A small Ulric wordmark in the footer. The app name leads in the header.
 
 ## Architecture
 

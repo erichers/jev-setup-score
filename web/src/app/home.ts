@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService } from './api.service';
-import { EXAMPLE_TICKERS, ExampleOutcome, HORIZONS, HistoryItem, TickerSummary } from './models';
+import { ExampleOutcome, HORIZONS, HistoryItem, TickerSummary } from './models';
 
 @Component({
   selector: 'app-home',
@@ -13,7 +13,6 @@ export class HomePage {
   private readonly router = inject(Router);
 
   readonly horizons = HORIZONS;
-  readonly exampleTickers = EXAMPLE_TICKERS;
   readonly ticker = signal('SPY');
   readonly horizon = signal<number>(10);
   readonly tickers = signal<TickerSummary[]>([]);

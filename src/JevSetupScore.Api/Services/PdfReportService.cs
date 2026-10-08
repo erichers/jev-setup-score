@@ -14,9 +14,9 @@ public sealed class PdfReportService
 
     public byte[] Render(ScoreResponse score)
     {
-        var ink = Color.FromHex("#0B1220");
-        var muted = Color.FromHex("#526072");
-        var teal = Color.FromHex("#0F8F74");
+        var ink = Color.FromHex("#141414");
+        var muted = Color.FromHex("#5C5C5C");
+        var lime = Color.FromHex("#4F7A00");
 
         return Document.Create(container =>
         {
@@ -29,8 +29,8 @@ public sealed class PdfReportService
                 page.Header().Column(column =>
                 {
                     column.Item().Text("Jev Setup Score").FontSize(22).SemiBold().FontColor(ink);
-                    column.Item().PaddingTop(2).Text("by Ulric studio").FontSize(9).FontColor(muted);
-                    column.Item().PaddingTop(8).LineHorizontal(1).LineColor(Color.FromHex("#D5DDE6"));
+                    column.Item().PaddingTop(2).Text("ULRIC").FontSize(8).FontColor(muted).LetterSpacing(1.4f);
+                    column.Item().PaddingTop(8).LineHorizontal(0.5f).LineColor(Color.FromHex("#D4D4D0"));
                 });
 
                 page.Content().PaddingVertical(16).Column(column =>
@@ -38,7 +38,7 @@ public sealed class PdfReportService
                     column.Spacing(10);
                     column.Item().Text($"{score.Ticker}  {score.Name}").FontSize(16).SemiBold();
                     column.Item().Text($"As of {score.AsOf}. Horizon {score.Horizon} sessions. {DescribeSource(score.DataSource)}.").FontColor(muted);
-                    column.Item().PaddingTop(6).Text(score.Score.ToString()).FontSize(42).SemiBold().FontColor(teal);
+                    column.Item().PaddingTop(6).Text(score.Score.ToString()).FontSize(42).SemiBold().FontColor(lime);
                     column.Item().Text("Setup score, 0 to 100").FontColor(muted);
                     column.Item().PaddingTop(4).Text($"Up-move likelihood {(score.Probability * 100):0.0} percent.").FontSize(12);
                     column.Item().Text(score.Summary);
@@ -98,8 +98,8 @@ public sealed class PdfReportService
 
                 page.Footer().Column(column =>
                 {
-                    column.Item().LineHorizontal(1).LineColor(Color.FromHex("#D5DDE6"));
-                    column.Item().PaddingTop(6).Text("Educational tool. Not financial advice. by Ulric studio").FontSize(9).FontColor(muted);
+                    column.Item().LineHorizontal(0.5f).LineColor(Color.FromHex("#D4D4D0"));
+                    column.Item().PaddingTop(6).Text("Educational tool. Not financial advice. Ulric").FontSize(9).FontColor(muted);
                 });
             });
         }).GeneratePdf();

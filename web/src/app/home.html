@@ -1,14 +1,11 @@
 <section class="landing" [attr.data-ready]="loading() ? 'false' : 'true'">
-  <div>
-    <p class="kicker">Jev Setup Score</p>
-    <h1>A clear read<br />on the next stretch.</h1>
-    <p class="lede">
-      A number from 0 to 100 for the chance of a higher close. The model, the inputs, and the
-      walk-forward test stay on the page with the score.
-    </p>
-  </div>
+  <p class="kicker">Jev Setup Score</p>
+  <h1>Will the close be higher?</h1>
+  <p class="lede">
+    A score from 0 to 100 for the next 5, 10, or 20 sessions. The inputs and the walk-forward test stay on the page.
+  </p>
 
-  <form class="hero-form panel" (submit)="go($event)">
+  <form class="hero-form" (submit)="go($event)">
     <label class="field">
       <span>Ticker</span>
       <input
@@ -34,54 +31,43 @@
         }
       </div>
     </div>
-    <button class="btn" type="submit">Score setup</button>
+    <button class="btn" type="submit">Score</button>
   </form>
   <p class="advice">Educational tool. Not financial advice.</p>
   @if (error()) {
     <p class="form-error" role="alert">{{ error() }}</p>
   }
-
-  <div>
-    <p class="quiet">Try a cached name</p>
-    <ul class="chips">
-      @for (symbol of exampleTickers; track symbol) {
-        <li>
-          <a class="chip" [routerLink]="['/score', symbol]" [queryParams]="{ horizon: horizon(), threshold: 60 }">{{ symbol }}</a>
-        </li>
-      }
-    </ul>
-  </div>
 </section>
 
-<section class="section universe" aria-labelledby="universe-title">
+<section class="section" aria-labelledby="universe-title">
   <div class="section-head">
-    <h2 id="universe-title">Fifteen names, ready offline</h2>
-    <p>Daily bars ship with the app. Pick one and the score still runs when a live quote fails.</p>
+    <h2 id="universe-title">Cached names</h2>
+    <p>Fifteen daily series ship with the app. Open one to score it.</p>
   </div>
   @if (loading()) {
-    <div class="cards" aria-busy="true">
+    <div aria-busy="true">
       <span class="sr-only">Loading cached tickers</span>
       @for (item of [1, 2, 3, 4, 5, 6]; track item) {
-        <div class="sk sk-card"></div>
+        <div class="sk sk-row"></div>
       }
     </div>
   } @else {
-    <ul class="cards">
+    <ul class="sheet">
       @for (item of tickers(); track item.symbol) {
         <li>
-          <a class="card" [routerLink]="['/score', item.symbol]" [queryParams]="{ horizon: horizon(), threshold: 60 }">
-            <span class="card-top">
-              <span class="symbol">{{ item.symbol }}</span>
-              <span class="kind">{{ item.kind }}</span>
+          <a [routerLink]="['/score', item.symbol]" [queryParams]="{ horizon: horizon(), threshold: 60 }">
+            <span class="symbol">{{ item.symbol }}</span>
+            <span>
+              <span class="name">{{ item.name }}</span>
             </span>
-            <span class="card-name">{{ item.name }}</span>
-            <span class="card-price">{{ item.last ? money(item.last) : 'No bars' }}</span>
-            @if (item.last) {
-              <span class="chg" [class.up]="item.changePercent >= 0" [class.down]="item.changePercent < 0">
-                {{ change(item.changePercent) }}
-              </span>
-              <span class="asof">As of {{ item.asOf }}</span>
-            }
+            <span class="quote">
+              <span class="price">{{ item.last ? money(item.last) : 'No bars' }}</span>
+              @if (item.last) {
+                <span class="chg" [class.up]="item.changePercent >= 0" [class.down]="item.changePercent < 0">
+                  {{ change(item.changePercent) }}
+                </span>
+              }
+            </span>
           </a>
         </li>
       }
@@ -91,14 +77,11 @@
 
 <section class="section" aria-labelledby="examples-title" [attr.data-examples]="examplesReady() ? 'ready' : 'loading'">
   <div class="section-head">
-    <h2 id="examples-title">What the model said</h2>
-    <p>
-      The latest out-of-sample score for each cached name, ten sessions ahead. The close after that
-      day was already known. The model did not use it.
-    </p>
+    <h2 id="examples-title">Past scores</h2>
+    <p>The latest out-of-sample call for each name, ten sessions ahead, and the close that followed.</p>
   </div>
   @if (!examplesReady()) {
-    <div class="examples" aria-busy="true">
+    <div aria-busy="true">
       <span class="sr-only">Loading past scores</span>
       @for (item of [1, 2, 3, 4]; track item) {
         <div class="sk sk-row"></div>
@@ -109,13 +92,10 @@
   } @else {
     <div class="examples">
       @for (item of examples(); track item.symbol) {
-        <a class="example" [routerLink]="['/score', item.symbol]" [queryParams]="{ horizon: 10, threshold: 60 }">
-          <span class="example-top">
-            <span class="symbol">{{ item.symbol }}</span>
-            <span class="score-pill">{{ item.score }}</span>
-          </span>
-          <span class="kind">{{ item.name }}</span>
-          <p>{{ item.outcome }}</p>
+        <a [routerLink]="['/score', item.symbol]" [queryParams]="{ horizon: 10, threshold: 60 }">
+          <span class="symbol">{{ item.symbol }}</span>
+          <span class="score-num">{{ item.score }}</span>
+          <span class="outcome">{{ item.outcome }}</span>
           <span class="chg" [class.up]="item.up" [class.down]="!item.up">
             {{ item.up ? 'Up' : 'Down' }} {{ move(item.forwardReturn) }}
           </span>
@@ -128,10 +108,10 @@
 @if (history().length) {
   <section class="section" aria-labelledby="history-title">
     <div class="section-head">
-      <h2 id="history-title">Recent scores on this machine</h2>
-      <p>Each lookup is stored in the local database, SQLite by default or MySQL when you select it.</p>
+      <h2 id="history-title">Lookups on this machine</h2>
+      <p>Stored in SQLite, or in MySQL when that provider is selected.</p>
     </div>
-    <div class="table-wrap panel">
+    <div class="table-wrap">
       <table>
         <thead>
           <tr>

@@ -201,7 +201,7 @@ export class ScorePage implements OnDestroy {
     }
     this.barsReady.set(false);
     const start = performance.now();
-    const duration = 900;
+    const duration = 220;
     const step = (now: number) => {
       const t = Math.min(1, (now - start) / duration);
       const eased = 1 - Math.pow(1 - t, 3);

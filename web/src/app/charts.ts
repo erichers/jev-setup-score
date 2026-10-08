@@ -30,27 +30,27 @@ export interface ChartPalette {
 export function palette(theme: 'light' | 'dark'): ChartPalette {
   if (theme === 'dark') {
     return {
-      text: '#f6f1ea',
-      muted: '#b7c0cc',
-      line: 'rgba(246, 241, 234, 0.12)',
-      up: '#5dcaa5',
-      down: '#e7a398',
-      ma20: '#2dd4bf',
-      ma50: '#8eacff',
-      ma200: '#e08b6f',
-      accent: '#2dd4bf',
+      text: '#f2f2ee',
+      muted: '#a1a1a1',
+      line: 'rgba(242, 242, 238, 0.14)',
+      up: '#f2f2ee',
+      down: '#c48b88',
+      ma20: '#ccff00',
+      ma50: '#8a8a8a',
+      ma200: '#5c5c5c',
+      accent: '#ccff00',
     };
   }
   return {
-    text: '#1c1917',
-    muted: '#6f655c',
-    line: 'rgba(28, 25, 23, 0.1)',
-    up: '#0f766e',
-    down: '#b5523a',
-    ma20: '#0f9e82',
-    ma50: '#3f6f8f',
-    ma200: '#d97757',
-    accent: '#0f9e82',
+    text: '#141414',
+    muted: '#5c5c5c',
+    line: 'rgba(20, 20, 20, 0.12)',
+    up: '#141414',
+    down: '#7a3330',
+    ma20: '#4f7a00',
+    ma50: '#8a8a8a',
+    ma200: '#b5b5b5',
+    accent: '#4f7a00',
   };
 }
 
@@ -59,7 +59,7 @@ function base(colors: ChartPalette, dates: string[]): EChartsCoreOption {
   return {
     backgroundColor: 'transparent',
     animation: !reduce,
-    animationDuration: 1200,
+    animationDuration: 220,
     animationEasing: 'cubicOut',
     textStyle: { fontFamily: 'IBM Plex Mono, ui-monospace, monospace', color: colors.muted },
     grid: { left: 8, right: 12, top: 32, bottom: 8, containLabel: true },
@@ -67,7 +67,7 @@ function base(colors: ChartPalette, dates: string[]): EChartsCoreOption {
       trigger: 'axis',
       backgroundColor: colors.text,
       borderWidth: 0,
-      textStyle: { color: colors.text === '#1c1917' ? '#f6f1ea' : '#1c1917', fontFamily: 'IBM Plex Mono, ui-monospace, monospace', fontSize: 12 },
+      textStyle: { color: colors.text === '#141414' ? '#f4f4f1' : '#141414', fontFamily: 'IBM Plex Mono, ui-monospace, monospace', fontSize: 12 },
     },
     xAxis: {
       type: 'category',
