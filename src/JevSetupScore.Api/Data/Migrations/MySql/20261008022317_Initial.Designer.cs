@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JevSetupScore.Api.Data.Migrations.MySql
 {
     [DbContext(typeof(MysqlAppDbContext))]
-    [Migration("20261008020843_Initial")]
+    [Migration("20261008022317_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -20,9 +20,11 @@ namespace JevSetupScore.Api.Data.Migrations.MySql
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .UseCollation("utf8mb4_unicode_ci")
                 .HasAnnotation("ProductVersion", "8.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
+            MySqlModelBuilderExtensions.HasCharSet(modelBuilder, "utf8mb4");
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
             modelBuilder.Entity("JevSetupScore.Api.Data.BarRow", b =>

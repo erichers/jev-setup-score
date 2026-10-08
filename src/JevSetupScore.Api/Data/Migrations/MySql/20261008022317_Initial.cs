@@ -21,7 +21,7 @@ namespace JevSetupScore.Api.Data.Migrations.MySql
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Symbol = table.Column<string>(type: "varchar(16)", maxLength: 16, nullable: false)
+                    Symbol = table.Column<string>(type: "varchar(16)", maxLength: 16, nullable: false, collation: "utf8mb4_unicode_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Date = table.Column<DateOnly>(type: "date", nullable: false),
                     Open = table.Column<double>(type: "double", nullable: false),
@@ -34,7 +34,8 @@ namespace JevSetupScore.Api.Data.Migrations.MySql
                 {
                     table.PrimaryKey("PK_Bars", x => x.Id);
                 })
-                .Annotation("MySql:CharSet", "utf8mb4");
+                .Annotation("MySql:CharSet", "utf8mb4")
+                .Annotation("Relational:Collation", "utf8mb4_unicode_ci");
 
             migrationBuilder.CreateTable(
                 name: "ScoreQueries",
@@ -42,16 +43,16 @@ namespace JevSetupScore.Api.Data.Migrations.MySql
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Symbol = table.Column<string>(type: "varchar(16)", maxLength: 16, nullable: false)
+                    Symbol = table.Column<string>(type: "varchar(16)", maxLength: 16, nullable: false, collation: "utf8mb4_unicode_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Horizon = table.Column<int>(type: "int", nullable: false),
                     Threshold = table.Column<int>(type: "int", nullable: false),
                     Score = table.Column<int>(type: "int", nullable: false),
                     Probability = table.Column<double>(type: "double", nullable: false),
                     AsOf = table.Column<DateOnly>(type: "date", nullable: false),
-                    DataSource = table.Column<string>(type: "varchar(16)", maxLength: 16, nullable: false)
+                    DataSource = table.Column<string>(type: "varchar(16)", maxLength: 16, nullable: false, collation: "utf8mb4_unicode_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Summary = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: false)
+                    Summary = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: false, collation: "utf8mb4_unicode_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     CreatedUtc = table.Column<DateTime>(type: "datetime(6)", nullable: false)
                 },
@@ -59,24 +60,26 @@ namespace JevSetupScore.Api.Data.Migrations.MySql
                 {
                     table.PrimaryKey("PK_ScoreQueries", x => x.Id);
                 })
-                .Annotation("MySql:CharSet", "utf8mb4");
+                .Annotation("MySql:CharSet", "utf8mb4")
+                .Annotation("Relational:Collation", "utf8mb4_unicode_ci");
 
             migrationBuilder.CreateTable(
                 name: "Tickers",
                 columns: table => new
                 {
-                    Symbol = table.Column<string>(type: "varchar(16)", maxLength: 16, nullable: false)
+                    Symbol = table.Column<string>(type: "varchar(16)", maxLength: 16, nullable: false, collation: "utf8mb4_unicode_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Name = table.Column<string>(type: "varchar(80)", maxLength: 80, nullable: false)
+                    Name = table.Column<string>(type: "varchar(80)", maxLength: 80, nullable: false, collation: "utf8mb4_unicode_ci")
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Kind = table.Column<string>(type: "varchar(16)", maxLength: 16, nullable: false)
+                    Kind = table.Column<string>(type: "varchar(16)", maxLength: 16, nullable: false, collation: "utf8mb4_unicode_ci")
                         .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Tickers", x => x.Symbol);
                 })
-                .Annotation("MySql:CharSet", "utf8mb4");
+                .Annotation("MySql:CharSet", "utf8mb4")
+                .Annotation("Relational:Collation", "utf8mb4_unicode_ci");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Bars_Symbol_Date",

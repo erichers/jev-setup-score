@@ -109,6 +109,7 @@ export interface ScoreResponse {
   coefficients: Coefficient[];
   chart: ChartPoint[];
   backtest: Backtest;
+  reportUrl: string;
 }
 
 export const HORIZONS = [5, 10, 20] as const;

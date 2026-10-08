@@ -30,7 +30,7 @@ else
     if (string.IsNullOrWhiteSpace(mysql))
         throw new InvalidOperationException("Database:Provider is MySql, but ConnectionStrings:MySql is empty.");
 
-    var version = ServerVersion.Parse(builder.Configuration["Database:MySqlVersion"] ?? "8.4.0-mysql");
+    var version = MySqlVersionResolver.Resolve(mysql, builder.Configuration["Database:MySqlVersion"]);
     builder.Services.AddDbContext<MysqlAppDbContext>(options => options.UseMySql(mysql, version));
     builder.Services.AddScoped<AppDbContext>(sp => sp.GetRequiredService<MysqlAppDbContext>());
 }
@@ -48,12 +48,18 @@ builder.Services.AddHttpClient<MarketDataService>(client =>
     client.Timeout = TimeSpan.FromSeconds(Math.Clamp(seconds, 2, 30));
     client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; JevSetupScore/1.1; educational)");
 });
+builder.Services.AddSingleton<PublicLinks>();
 builder.Services.AddSingleton<StudyCache>();
 builder.Services.AddScoped<ScoreService>();
 builder.Services.AddSingleton<PdfReportService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(swagger =>
+{
+    var publicBase = builder.Configuration["PublicBaseUrl"]?.Trim().TrimEnd('/');
+    if (!string.IsNullOrWhiteSpace(publicBase))
+        swagger.AddServer(new Microsoft.OpenApi.Models.OpenApiServer { Url = publicBase });
+});
 
 var origins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>();
 if (origins is null || origins.Length == 0)
@@ -62,6 +68,14 @@ builder.Services.AddCors(options => options.AddPolicy("ui", policy =>
     policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod()));
 
 var app = builder.Build();
+
+var pathBase = app.Configuration["PathBase"]?.Trim();
+if (!string.IsNullOrWhiteSpace(pathBase))
+{
+    if (!pathBase.StartsWith('/'))
+        pathBase = "/" + pathBase;
+    app.UsePathBase(pathBase.TrimEnd('/'));
+}
 
 app.UseExceptionHandler(handler =>
 {

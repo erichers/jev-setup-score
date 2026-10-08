@@ -32,3 +32,6 @@ jobs:
       - name: Build
         working-directory: web
         run: npm run build
+      - name: Sub-path check
+        working-directory: web
+        run: npm run check:subpath

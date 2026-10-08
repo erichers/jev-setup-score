@@ -33,7 +33,7 @@ public sealed class Study
     public required Dictionary<string, FeatureRow> Latest { get; init; }
 }
 
-public sealed class ScoreService(MarketDataService market, StudyCache cache, AppDbContext db, ILogger<ScoreService> logger)
+public sealed class ScoreService(MarketDataService market, StudyCache cache, AppDbContext db, PublicLinks links, ILogger<ScoreService> logger)
 {
     public async Task<ScoreResponse> ScoreAsync(string ticker, int horizon, int threshold, CancellationToken ct)
     {
@@ -97,7 +97,8 @@ public sealed class ScoreService(MarketDataService market, StudyCache cache, App
             factors,
             Coefficients(study.Model),
             ChartBuilder.Build(loaded.Bars).Select(ToChart).ToList(),
-            ToBacktest(report));
+            ToBacktest(report),
+            links.Report(loaded.Symbol, horizon, threshold));
 
         db.ScoreQueries.Add(new ScoreQuery
         {

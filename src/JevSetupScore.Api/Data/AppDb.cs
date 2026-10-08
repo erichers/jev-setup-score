@@ -83,4 +83,11 @@ public sealed class MysqlAppDbContext : AppDbContext
     public MysqlAppDbContext(DbContextOptions<MysqlAppDbContext> options) : base(options)
     {
     }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.HasCharSet("utf8mb4");
+        modelBuilder.UseCollation("utf8mb4_unicode_ci");
+    }
 }

@@ -105,8 +105,10 @@ export class ScorePage implements OnDestroy {
   }
 
   pdfHref(): string {
+    const fromServer = this.data()?.reportUrl;
+    if (fromServer) return fromServer;
     const ticker = this.draft().trim().toUpperCase() || 'SPY';
-    return `/api/score/${encodeURIComponent(ticker)}/report.pdf?horizon=${this.horizon()}&threshold=${this.threshold()}`;
+    return `api/score/${encodeURIComponent(ticker)}/report.pdf?horizon=${this.horizon()}&threshold=${this.threshold()}`;
   }
 
   arc(score: number): { track: string; value: string } {

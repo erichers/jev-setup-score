@@ -146,35 +146,96 @@ Tests:
 dotnet test
 ```
 
-## MAMP MySQL
+## Deploy under MAMP
 
-MAMP's MySQL listens on `127.0.0.1` port `8889`. The example user is `root` and the example password is `root`. That pair lives only in `.env.example` and `src/JevSetupScore.Api/appsettings.Development.example.json`. Do not commit a real password, and do not copy those files to a name git will track.
+Apache serves the UI at `http://localhost:8888/grokbot/asp/jev-setup-score/`. The API is proxied from that same prefix. MAMP's MySQL is 5.7.39 on `127.0.0.1` port `8889`. The example user is `root` and the example password is `root`. That pair lives only in `.env.example` and `src/JevSetupScore.Api/appsettings.Development.example.json`. Do not commit a real password.
+
+### Build the UI for the sub-path
+
+```bash
+cd web
+npm install
+npm run build:mamp
+```
+
+That is `ng build --base-href /grokbot/asp/jev-setup-score/`. Copy the files in `web/dist/mamp-check/browser/` into the Apache directory for `/grokbot/asp/jev-setup-score/`.
+
+The page `<base href>` is that prefix with a trailing slash. Router links, scripts, styles, and the favicon are relative to it. Every API call in the app is a relative `api/...` URL, including the PDF download, so the browser requests `http://localhost:8888/grokbot/asp/jev-setup-score/api/...`. A leading slash (`/api/...`) would skip the prefix and is not used.
+
+`npm run build` without `build:mamp` keeps `<base href="/">` for Docker and for `ng serve`.
+
+### Apache
+
+Proxy the API and let client routes fall back to `index.html`. Adjust the Kestrel port if you did not use 5080.
+
+```apache
+ProxyPreserveHost On
+ProxyPass /grokbot/asp/jev-setup-score/api/ http://127.0.0.1:5080/api/
+ProxyPassReverse /grokbot/asp/jev-setup-score/api/ http://127.0.0.1:5080/api/
+
+RewriteEngine On
+RewriteBase /grokbot/asp/jev-setup-score/
+RewriteRule ^api/ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /grokbot/asp/jev-setup-score/index.html [L]
+```
+
+This proxy strips the site prefix, so Kestrel still sees `/api/...`. Leave `PathBase` empty. Set `PathBase` to `/grokbot/asp/jev-setup-score` only if the proxy forwards that prefix through to Kestrel.
+
+`PublicBaseUrl` is how the API builds absolute links (the `reportUrl` field and the Swagger server). For this deploy set:
+
+```text
+PublicBaseUrl=http://localhost:8888/grokbot/asp/jev-setup-score
+```
+
+Leave `PublicBaseUrl` empty and the API emits a relative `api/score/.../report.pdf` link, which the browser resolves with the base href.
+
+### MySQL 5.7
 
 1. Start MySQL in MAMP.
-2. Create the database: `CREATE DATABASE jev_setup_score;`
-3. Copy the example settings, then set the provider to MySQL:
+2. Create the database with utf8mb4:
+
+```sql
+CREATE DATABASE jev_setup_score CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+3. Copy the example settings and switch the provider:
 
 ```bash
 cp src/JevSetupScore.Api/appsettings.Development.example.json src/JevSetupScore.Api/appsettings.Development.json
 ```
 
-In that Development file, set:
-
-```json
-"Database": { "Provider": "MySql", "MySqlVersion": "8.4.0-mysql" }
-```
-
-The example connection string is already:
+Set `"Database": { "Provider": "MySql", "MySqlVersion": "5.7.39-mysql" }`. The example connection string is:
 
 ```text
-Server=127.0.0.1;Port=8889;Database=jev_setup_score;User=root;Password=root
+Server=127.0.0.1;Port=8889;Database=jev_setup_score;User=root;Password=root;CharSet=utf8mb4;SslMode=None
 ```
 
-Or export the same values from a copied `.env` (`Database__Provider=MySql` and `ConnectionStrings__MySql`). `appsettings.Development.json` and `.env` are gitignored.
+`appsettings.Development.json` and `.env` are gitignored.
 
-4. Start the API. It applies the MySQL migrations and seeds the cached bars.
+4. Start the API. On startup it calls `ServerVersion.AutoDetect` when MySQL accepts a connection, and uses `Database:MySqlVersion` only if that connection fails. It then applies migrations and seeds cached bars. Migrations use `utf8mb4` and `utf8mb4_unicode_ci`. They do not use MySQL 8 collations, JSON columns, or descending indexes. `datetime(6)` is valid on 5.7.39. New MySQL migrations are generated against server version `5.7.39-mysql`, so a newer local server does not rewrite them with MySQL 8 SQL.
 
-`dotnet run` with no provider set stays on SQLite. An older `jev.db` created before migrations existed should be deleted so `Migrate()` can create `__EFMigrationsHistory`.
+`dotnet run` with no provider set stays on SQLite. An older `jev.db` created before migrations existed should be deleted so `Migrate()` can create `__EFMigrationsHistory`. If a MySQL database already has the first migration from before the 5.7 collation change, drop that database and let startup create it again.
+
+### Sub-path check
+
+Automated:
+
+```bash
+cd web
+npm run check:subpath
+```
+
+The script refuses absolute `api` URLs in the Angular source, builds with the MAMP base href, and serves that build under `/grokbot/asp/jev-setup-score/`. It checks the base tag, that scripts stay inside the prefix, that `/methodology` falls back to the shell, and that a PDF href resolves to `/grokbot/asp/jev-setup-score/api/score/SPY/report.pdf`.
+
+Manual, with the API already on port 5080:
+
+1. Run `npm run check:subpath` and leave the printed origin, or serve `web/dist/mamp-check/browser` with any static server mounted at `/grokbot/asp/jev-setup-score/` that proxies `api` to `http://127.0.0.1:5080` and falls back to `index.html`.
+2. Open `http://127.0.0.1:<port>/grokbot/asp/jev-setup-score/`.
+3. In the network panel, confirm ticker and score calls go to `.../jev-setup-score/api/...`.
+4. Open a score and use Download PDF. The link stays under the same prefix.
+5. Refresh on `.../jev-setup-score/methodology` and confirm the shell loads.
 
 ## Docker
 
@@ -184,7 +245,15 @@ From the repository root:
 docker compose up --build
 ```
 
-Compose starts MySQL 8.4 and the app. The app uses `Database__Provider=MySql` and talks to the `mysql` service on port 3306. The database password defaults to `root` through `MYSQL_ROOT_PASSWORD`. Override it in your shell or in a local `.env` if you want a different one. Open http://localhost:8080.
+Compose starts MySQL 8.4 and the app. The app uses `Database__Provider=MySql` and talks to the `mysql` service on port 3306. Startup detects the server version when the connection works. The database password defaults to `root` through `MYSQL_ROOT_PASSWORD`. Override it in your shell or in a local `.env` if you want a different one. Open http://localhost:8080.
+
+MySQL 5.7, the same major version as MAMP, is a Compose profile. It publishes host port 3307 and does not replace the 8.4 service:
+
+```bash
+docker compose --profile mysql57 up -d mysql57
+```
+
+Point the API at it with `Database__Provider=MySql`, `Database__MySqlVersion=5.7.39-mysql`, and `Server=127.0.0.1;Port=3307;Database=jev_setup_score;User=root;Password=root;CharSet=utf8mb4;SslMode=None`. Startup migrates and seeds that database.
 
 The image includes the cached bars. If Yahoo or Stooq cannot be reached, scores for the cached tickers still load. Set `Data__AllowLiveFetch=false` in `docker-compose.yml` to skip live calls.
 
@@ -197,7 +266,9 @@ Running the image by itself, without compose, keeps the SQLite default.
 | `ASPNETCORE_ENVIRONMENT` | `Development` or `Production` | `Development` for `dotnet run` |
 | `ASPNETCORE_URLS` | Bind address | `http://localhost:5080` in the launch profile, `http://+:8080` in Docker |
 | `Database__Provider` | `Sqlite` or `MySql` | `Sqlite` |
-| `Database__MySqlVersion` | Pomelo server version string | `8.4.0-mysql` |
+| `Database__MySqlVersion` | Fallback Pomelo version when AutoDetect cannot connect. MAMP is `5.7.39-mysql`. Compose sets `8.4.0-mysql` for the MySQL 8.4 service | `5.7.39-mysql` |
+| `PublicBaseUrl` | Prefix for links the API writes, such as the PDF URL and Swagger. Empty keeps those links relative (`api/...`) | empty |
+| `PathBase` | Path prefix Kestrel should strip. Set this only when the proxy forwards the prefix. Leave empty when Apache strips it | empty |
 | `ConnectionStrings__Default` | SQLite file | `Data Source=jev.db` |
 | `ConnectionStrings__MySql` | MySQL connection string. Required only when the provider is MySql | empty |
 | `MYSQL_ROOT_PASSWORD` | Password for the compose MySQL service | `root` |
@@ -216,7 +287,7 @@ See `.env.example` and `src/JevSetupScore.Api/appsettings.Development.example.js
 dotnet test JevSetupScore.sln --configuration Release
 ```
 
-The suite checks RSI, MACD, and ATR against known series, logistic convergence on a synthetic set, that features do not look ahead, that a walk-forward row is trained only after its label is known, and that all 15 cache files are ordered daily bars. GitHub Actions runs that suite and `npm run build` in `web/`.
+The suite checks RSI, MACD, and ATR against known series, logistic convergence on a synthetic set, that features do not look ahead, that a walk-forward row is trained only after its label is known, that all 15 cache files are ordered daily bars, that report links stay relative unless `PublicBaseUrl` is set, and that the MySQL migrations stay on utf8mb4 without MySQL 8-only SQL. GitHub Actions runs that suite, `npm run build`, and `npm run check:subpath`.
 
 ## Disclaimer
 

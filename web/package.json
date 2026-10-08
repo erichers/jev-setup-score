@@ -5,6 +5,8 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:mamp": "ng build --base-href /grokbot/asp/jev-setup-score/ --output-path dist/mamp-check",
+    "check:subpath": "node scripts/check-subpath.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },

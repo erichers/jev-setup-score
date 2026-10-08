@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\JevSetupScore.Core\JevSetupScore.Core.csproj" />
+    <ProjectReference Include="..\..\src\JevSetupScore.Api\JevSetupScore.Api.csproj" />
   </ItemGroup>
 
 </Project>

@@ -90,4 +90,5 @@ public sealed record ScoreResponse(
     IReadOnlyList<FactorDto> Factors,
     IReadOnlyList<CoefficientDto> Coefficients,
     IReadOnlyList<ChartPointDto> Chart,
-    BacktestDto Backtest);
+    BacktestDto Backtest,
+    string ReportUrl);
