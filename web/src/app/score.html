@@ -1,0 +1,181 @@
+<article class="score" [attr.data-ready]="data() ? 'true' : 'false'">
+  <form class="query panel" (submit)="submit($event)">
+    <label class="field">
+      <span>Ticker</span>
+      <input class="ticker-input compact" [value]="draft()" (input)="onTicker($event)" maxlength="12" autocomplete="off" spellcheck="false" />
+    </label>
+    <div class="field">
+      <span id="score-horizon">Sessions ahead</span>
+      <div class="segment" role="radiogroup" aria-labelledby="score-horizon">
+        @for (item of horizons; track item) {
+          <button type="button" role="radio" [attr.aria-checked]="horizon() === item" (click)="setHorizon(item)">{{ item }}</button>
+        }
+      </div>
+    </div>
+    <label class="field threshold">
+      <span>Long above {{ threshold() }}</span>
+      <input type="range" min="50" max="90" step="5" [value]="threshold()" (change)="setThreshold($event)" />
+    </label>
+    <button class="btn" type="submit">Update</button>
+    <a class="btn ghost" [href]="pdfHref()">Download PDF</a>
+  </form>
+
+  <p class="advice">Educational tool. Not financial advice.</p>
+
+  @if (loading()) {
+    <div class="skeleton" aria-busy="true" aria-live="polite">
+      <span class="sr-only">Scoring the setup</span>
+      <div class="sk sk-gauge"></div>
+      <div class="sk sk-read"></div>
+      <div class="sk sk-wide"></div>
+    </div>
+  } @else if (error()) {
+    <p class="panel form-error" role="alert">{{ error() }}</p>
+  } @else if (data(); as score) {
+    <section class="score-top" aria-label="Score">
+      <div class="panel gauge-panel">
+        <svg class="gauge" viewBox="0 0 240 210" role="img" [attr.aria-label]="'Setup score ' + score.score + ' out of 100'">
+          <circle class="gauge-track" cx="120" cy="118" r="78" [attr.stroke-dasharray]="arc(score.score).track" transform="rotate(135 120 118)"></circle>
+          <circle class="gauge-value" cx="120" cy="118" r="78" [attr.stroke-dasharray]="arc(score.score).value" transform="rotate(135 120 118)"></circle>
+          @for (mark of ticks; track mark.score) {
+            <line [attr.x1]="mark.x1" [attr.y1]="mark.y1" [attr.x2]="mark.x2" [attr.y2]="mark.y2" class="gauge-tick"></line>
+            <text class="gauge-tick-label" [attr.x]="mark.lx" [attr.y]="mark.ly" text-anchor="middle">{{ mark.score }}</text>
+          }
+          <text class="gauge-num" x="120" y="124" text-anchor="middle">{{ score.score }}</text>
+          <text class="gauge-unit" x="120" y="146" text-anchor="middle">SCORE</text>
+        </svg>
+        <p class="gauge-caption">Rounded likelihood, 0 to 100</p>
+      </div>
+      <div class="panel read-panel">
+        <p class="kicker">{{ score.ticker }} · {{ score.name }}</p>
+        <p class="likelihood-label">Up-move likelihood</p>
+        <p class="likelihood">{{ pct(score.probability) }}</p>
+        <p class="horizon-line">over the next {{ score.horizon }} sessions</p>
+        <p class="summary">{{ score.summary }}</p>
+        <p class="meta">
+          <span class="pill" [class.live]="score.dataSource === 'live'">{{ score.dataSource === 'live' ? 'Live data' : 'Cached data' }}</span>
+          As of {{ score.asOf }}
+        </p>
+        <p class="data-note">{{ score.dataNote }}</p>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="factors-title">
+      <div class="section-head">
+        <h2 id="factors-title">What is pulling the score</h2>
+        <p>Each bar is log-odds added by that input. Positive bars raise the chance of a higher close.</p>
+      </div>
+      <ol class="factor-list">
+        @for (factor of score.factors; track factor.key) {
+          <li>
+            <div class="factor-head">
+              <span>{{ factor.label }}</span>
+              <span class="num">{{ signed(factor.contribution) }}</span>
+            </div>
+            <div class="bar-track" aria-hidden="true">
+              <span class="bar-zero"></span>
+              <span class="bar-fill" [class.up]="factor.contribution >= 0" [class.down]="factor.contribution < 0" [style.width]="barStyle(factor, score.factors)['width']" [style.left]="barStyle(factor, score.factors)['left']"></span>
+            </div>
+            <p class="reading">{{ factor.reading }} <span class="display">{{ factor.display }}</span></p>
+          </li>
+        }
+      </ol>
+    </section>
+
+    <section class="panel" aria-labelledby="price-title">
+      <div class="section-head">
+        <h2 id="price-title">Price and moving averages</h2>
+        <p>Last year of daily bars. Teal is 20-day, blue is 50-day, gold is 200-day.</p>
+      </div>
+      <div id="price-chart" class="chart" role="img" [attr.aria-label]="'Price chart for ' + score.ticker"></div>
+    </section>
+
+    <section class="split">
+      <div class="panel">
+        <div class="section-head">
+          <h2>RSI (14)</h2>
+          <p>Dashed lines sit at 30 and 70.</p>
+        </div>
+        <div id="rsi-chart" class="chart short" role="img" aria-label="RSI chart"></div>
+      </div>
+      <div class="panel">
+        <div class="section-head">
+          <h2>MACD (12, 26, 9)</h2>
+          <p>Line, signal, and histogram.</p>
+        </div>
+        <div id="macd-chart" class="chart short" role="img" aria-label="MACD chart"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="backtest" aria-labelledby="backtest-title">
+      <div class="section-head">
+        <h2 id="backtest-title">Walk-forward backtest</h2>
+        <p>
+          Rolling train window of 504 sessions and test window of 63. A row is trained only after its
+          {{ score.horizon }}-session outcome is known, and before the test window starts.
+        </p>
+      </div>
+      <ul class="stats">
+        <li><span>Hit rate</span><strong class="num">{{ pct(score.backtest.hitRate) }}</strong></li>
+        <li><span>Base rate</span><strong class="num">{{ pct(score.backtest.baseRate) }}</strong></li>
+        <li><span>Brier</span><strong class="num">{{ fixed(score.backtest.brier) }}</strong></li>
+        <li><span>Base Brier</span><strong class="num">{{ fixed(score.backtest.baseRateBrier) }}</strong></li>
+        <li><span>Folds</span><strong class="num">{{ score.backtest.foldCount }}</strong></li>
+        <li><span>Test rows</span><strong class="num">{{ score.backtest.predictionCount }}</strong></li>
+      </ul>
+      <p class="honesty">{{ score.backtest.honesty }}</p>
+      <p class="rule">
+        Long when the score is above {{ score.threshold }}, otherwise flat.
+        Trades do not overlap. Strategy {{ multiple(score.backtest.strategyMultiple) }},
+        buy and hold {{ multiple(score.backtest.buyHoldMultiple) }},
+        over {{ score.backtest.tradeCount }} trades on {{ score.ticker }}.
+      </p>
+      <div class="split">
+        <div>
+          <h3>Calibration</h3>
+          <p class="caption">Predicted probability against the share of up closes, by bucket.</p>
+          <div id="calibration-chart" class="chart short" role="img" aria-label="Calibration chart"></div>
+        </div>
+        <div>
+          <h3>Equity curve</h3>
+          <p class="caption">Out-of-sample multiples for {{ score.ticker }}. Starts at 1.00.</p>
+          @if (score.backtest.equity.length === 0) {
+            <p>This ticker has no completed out-of-sample windows yet.</p>
+          } @else {
+            <div id="equity-chart" class="chart short" role="img" aria-label="Equity curve"></div>
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="coeff-title">
+      <div class="section-head">
+        <h2 id="coeff-title">Model coefficients</h2>
+        <p>
+          Logistic regression on {{ score.trainingRows }} labeled days.
+          Weights are per one standard deviation. {{ score.modelConverged ? 'Training converged.' : 'Training stopped at the iteration cap.' }}
+        </p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Input</th>
+              <th class="num">Weight</th>
+              <th>Meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of score.coefficients; track row.key) {
+              <tr>
+                <td>{{ row.label }}</td>
+                <td class="num">{{ weight(row.weight) }}</td>
+                <td>{{ row.meaning }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</article>

@@ -1,0 +1,80 @@
+<section class="home">
+  <div class="panel hero">
+    <div class="hero-copy">
+      <p class="kicker">Daily and weekly setup</p>
+      <h1>Will the next stretch close higher?</h1>
+      <p class="lede">
+        Enter a ticker. Jev scores the chance of a higher close over the next 5, 10, or 20 sessions
+        with a logistic model you can read, including the walk-forward test.
+      </p>
+    </div>
+    <form class="hero-form" (submit)="go($event)">
+      <label class="field">
+        <span>Ticker</span>
+        <input
+          id="ticker"
+          class="ticker-input"
+          name="ticker"
+          [value]="ticker()"
+          (input)="onTicker($event)"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+          maxlength="12"
+          required
+        />
+      </label>
+      <div class="field">
+        <span id="horizon-label">Sessions ahead</span>
+        <div class="segment" role="radiogroup" aria-labelledby="horizon-label">
+          @for (item of horizons; track item) {
+            <button type="button" role="radio" [attr.aria-checked]="horizon() === item" (click)="setHorizon(item)">
+              {{ item }}
+            </button>
+          }
+        </div>
+      </div>
+      <button class="btn" type="submit">Score setup</button>
+      <p class="advice">Educational tool. Not financial advice.</p>
+      @if (error()) {
+        <p class="form-error" role="alert">{{ error() }}</p>
+      }
+    </form>
+  </div>
+
+  <section class="universe" aria-labelledby="universe-title">
+    <div class="section-head">
+      <h2 id="universe-title">Cached universe</h2>
+      <p>These names ship with the app, so the score still runs when a live quote fails.</p>
+    </div>
+    @if (loading()) {
+      <div class="cards" aria-busy="true">
+        <span class="sr-only">Loading cached tickers</span>
+        @for (item of [1, 2, 3, 4, 5, 6]; track item) {
+          <div class="sk sk-card"></div>
+        }
+      </div>
+    } @else {
+      <ul class="cards">
+        @for (item of tickers(); track item.symbol) {
+          <li>
+            <a class="card" [routerLink]="['/score', item.symbol]" [queryParams]="{ horizon: horizon(), threshold: 60 }">
+              <span class="card-top">
+                <span class="symbol">{{ item.symbol }}</span>
+                <span class="kind">{{ item.kind }}</span>
+              </span>
+              <span class="card-name">{{ item.name }}</span>
+              <span class="card-price num">{{ item.last ? money(item.last) : 'No bars' }}</span>
+              @if (item.last) {
+                <span class="chg" [class.up]="item.changePercent >= 0" [class.down]="item.changePercent < 0">
+                  {{ change(item.changePercent) }}
+                </span>
+                <span class="asof">As of {{ item.asOf }}</span>
+              }
+            </a>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+</section>

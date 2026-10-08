@@ -1,0 +1,17 @@
+services:
+  jev-setup-score:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Default: Data Source=/app/db/app.db
+      Data__CacheDirectory: /app/data/cache
+      Data__AllowLiveFetch: "true"
+      Data__HttpTimeoutSeconds: "8"
+    volumes:
+      - jev-db:/app/db
+
+volumes:
+  jev-db:
