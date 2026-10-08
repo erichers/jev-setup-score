@@ -1,0 +1,10 @@
+.git
+**/.git
+**/bin
+**/obj
+web/node_modules
+web/dist
+web/.angular
+**/*.db
+**/*.user
+.env

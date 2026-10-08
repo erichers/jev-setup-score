@@ -1,0 +1,142 @@
+<section class="landing" [attr.data-ready]="loading() ? 'false' : 'true'">
+  <p class="kicker reveal" appReveal>Jev Setup Score</p>
+  <h1 class="reveal" appReveal="1">Will the close be higher?</h1>
+  <p class="lede reveal" appReveal="2">
+    A score from 0 to 100 for the next 5, 10, or 20 sessions. The inputs and the walk-forward test stay on the page.
+  </p>
+
+  <form class="hero-form reveal" appReveal="3" (submit)="go($event)">
+    <label class="field">
+      <span>Ticker</span>
+      <input
+        id="ticker"
+        class="ticker-input"
+        name="ticker"
+        [value]="ticker()"
+        (input)="onTicker($event)"
+        autocomplete="off"
+        autocapitalize="characters"
+        spellcheck="false"
+        maxlength="12"
+        required
+      />
+    </label>
+    <div class="field">
+      <span id="horizon-label">Sessions ahead</span>
+      <div class="segment" role="radiogroup" aria-labelledby="horizon-label">
+        @for (item of horizons; track item) {
+          <button type="button" role="radio" [attr.aria-checked]="horizon() === item" (click)="setHorizon(item)">
+            {{ item }}
+          </button>
+        }
+      </div>
+    </div>
+    <button class="btn" type="submit">Score</button>
+  </form>
+  <p class="advice reveal" appReveal="4">Educational tool. Not financial advice.</p>
+  @if (error()) {
+    <p class="form-error" role="alert">{{ error() }}</p>
+  }
+</section>
+
+<section class="section" aria-labelledby="universe-title">
+  <div class="section-head">
+    <h2 id="universe-title" class="reveal" appReveal>Cached names</h2>
+    <p class="reveal" appReveal="1">Fifteen daily series ship with the app. Open one to score it.</p>
+  </div>
+  @if (loading()) {
+    <div aria-busy="true">
+      <span class="sr-only">Loading cached tickers</span>
+      @for (item of [1, 2, 3, 4, 5, 6]; track item) {
+        <div class="sk sk-row"></div>
+      }
+    </div>
+  } @else {
+    <ul class="sheet">
+      @for (item of tickers(); track item.symbol; let i = $index) {
+        <li class="reveal" [appReveal]="i">
+          <a [routerLink]="['/score', item.symbol]" [queryParams]="{ horizon: horizon(), threshold: 60 }">
+            <span class="symbol">{{ item.symbol }}</span>
+            <span>
+              <span class="name">{{ item.name }}</span>
+            </span>
+            <span class="quote">
+              <span class="price">{{ item.last ? money(item.last) : 'No bars' }}</span>
+              @if (item.last) {
+                <span class="chg" [class.up]="item.changePercent >= 0" [class.down]="item.changePercent < 0">
+                  {{ change(item.changePercent) }}
+                </span>
+              }
+            </span>
+          </a>
+        </li>
+      }
+    </ul>
+  }
+</section>
+
+<section class="section" aria-labelledby="examples-title" [attr.data-examples]="examplesReady() ? 'ready' : 'loading'">
+  <div class="section-head">
+    <h2 id="examples-title" class="reveal" appReveal>Past scores</h2>
+    <p class="reveal" appReveal="1">The latest out-of-sample call for each name, ten sessions ahead, and the close that followed.</p>
+  </div>
+  @if (!examplesReady()) {
+    <div aria-busy="true">
+      <span class="sr-only">Loading past scores</span>
+      @for (item of [1, 2, 3, 4]; track item) {
+        <div class="sk sk-row"></div>
+      }
+    </div>
+  } @else if (exampleError()) {
+    <p class="form-error" role="alert">{{ exampleError() }}</p>
+  } @else {
+    <div class="examples">
+      @for (item of examples(); track item.symbol; let i = $index) {
+        <a class="reveal" [appReveal]="i" [routerLink]="['/score', item.symbol]" [queryParams]="{ horizon: 10, threshold: 60 }">
+          <span class="symbol">{{ item.symbol }}</span>
+          <span class="score-num count-slot">
+            <span class="count-sizer" aria-hidden="true">{{ item.score }}</span>
+            <span [appCount]="item.score"></span>
+          </span>
+          <span class="outcome">{{ item.outcome }}</span>
+          <span class="chg" [class.up]="item.up" [class.down]="!item.up">
+            {{ item.up ? 'Up' : 'Down' }} {{ move(item.forwardReturn) }}
+          </span>
+        </a>
+      }
+    </div>
+  }
+</section>
+
+@if (history().length) {
+  <section class="section" aria-labelledby="history-title">
+    <div class="section-head">
+    <h2 id="history-title" class="reveal" appReveal>Lookups on this machine</h2>
+    <p class="reveal" appReveal="1">Stored in SQLite, or in MySQL when that provider is selected.</p>
+    </div>
+    <div class="table-wrap reveal" appReveal="2">
+      <table>
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th class="num">Score</th>
+            <th class="num">Horizon</th>
+            <th>As of</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of history(); track item.id) {
+            <tr>
+              <td class="symbol">{{ item.symbol }}</td>
+              <td class="num">{{ item.score }}</td>
+              <td class="num">{{ item.horizon }}</td>
+              <td>{{ item.asOf }}</td>
+              <td>{{ item.dataSource === 'live' ? 'Live' : 'Cached' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}

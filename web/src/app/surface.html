@@ -1,0 +1,32 @@
+<section class="surface-block" aria-labelledby="surface-title">
+  <div class="section-head reveal" appReveal>
+    <h2 id="surface-title">Probability surface</h2>
+    <p>Two standardized inputs. Height is the chance of a higher close. Drag to orbit. The lines are sample paths.</p>
+  </div>
+  <div class="surface-stage">
+    <svg
+      class="surface-still"
+      viewBox="0 0 640 420"
+      role="img"
+      aria-label="Still drawing of the logistic surface"
+      [class.is-hidden]="!reduced() && ready()"
+      [attr.aria-hidden]="!reduced() && ready() ? 'true' : null"
+    >
+      @for (line of mesh; track line) {
+        <path [attr.d]="line" />
+      }
+      @for (walk of walks; track walk) {
+        <path class="walk" [attr.d]="walk" />
+      }
+    </svg>
+    @if (!reduced()) {
+      <div
+        #host
+        class="surface-host"
+        [class.on]="ready()"
+        role="img"
+        aria-label="Logistic probability surface. Drag to orbit."
+      ></div>
+    }
+  </div>
+</section>
