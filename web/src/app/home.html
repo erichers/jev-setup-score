@@ -1,11 +1,11 @@
 <section class="landing" [attr.data-ready]="loading() ? 'false' : 'true'">
-  <p class="kicker">Jev Setup Score</p>
-  <h1>Will the close be higher?</h1>
-  <p class="lede">
+  <p class="kicker reveal" appReveal>Jev Setup Score</p>
+  <h1 class="reveal" appReveal="1">Will the close be higher?</h1>
+  <p class="lede reveal" appReveal="2">
     A score from 0 to 100 for the next 5, 10, or 20 sessions. The inputs and the walk-forward test stay on the page.
   </p>
 
-  <form class="hero-form" (submit)="go($event)">
+  <form class="hero-form reveal" appReveal="3" (submit)="go($event)">
     <label class="field">
       <span>Ticker</span>
       <input
@@ -33,7 +33,7 @@
     </div>
     <button class="btn" type="submit">Score</button>
   </form>
-  <p class="advice">Educational tool. Not financial advice.</p>
+  <p class="advice reveal" appReveal="4">Educational tool. Not financial advice.</p>
   @if (error()) {
     <p class="form-error" role="alert">{{ error() }}</p>
   }
@@ -41,8 +41,8 @@
 
 <section class="section" aria-labelledby="universe-title">
   <div class="section-head">
-    <h2 id="universe-title">Cached names</h2>
-    <p>Fifteen daily series ship with the app. Open one to score it.</p>
+    <h2 id="universe-title" class="reveal" appReveal>Cached names</h2>
+    <p class="reveal" appReveal="1">Fifteen daily series ship with the app. Open one to score it.</p>
   </div>
   @if (loading()) {
     <div aria-busy="true">
@@ -53,8 +53,8 @@
     </div>
   } @else {
     <ul class="sheet">
-      @for (item of tickers(); track item.symbol) {
-        <li>
+      @for (item of tickers(); track item.symbol; let i = $index) {
+        <li class="reveal" [appReveal]="i">
           <a [routerLink]="['/score', item.symbol]" [queryParams]="{ horizon: horizon(), threshold: 60 }">
             <span class="symbol">{{ item.symbol }}</span>
             <span>
@@ -77,8 +77,8 @@
 
 <section class="section" aria-labelledby="examples-title" [attr.data-examples]="examplesReady() ? 'ready' : 'loading'">
   <div class="section-head">
-    <h2 id="examples-title">Past scores</h2>
-    <p>The latest out-of-sample call for each name, ten sessions ahead, and the close that followed.</p>
+    <h2 id="examples-title" class="reveal" appReveal>Past scores</h2>
+    <p class="reveal" appReveal="1">The latest out-of-sample call for each name, ten sessions ahead, and the close that followed.</p>
   </div>
   @if (!examplesReady()) {
     <div aria-busy="true">
@@ -91,10 +91,13 @@
     <p class="form-error" role="alert">{{ exampleError() }}</p>
   } @else {
     <div class="examples">
-      @for (item of examples(); track item.symbol) {
-        <a [routerLink]="['/score', item.symbol]" [queryParams]="{ horizon: 10, threshold: 60 }">
+      @for (item of examples(); track item.symbol; let i = $index) {
+        <a class="reveal" [appReveal]="i" [routerLink]="['/score', item.symbol]" [queryParams]="{ horizon: 10, threshold: 60 }">
           <span class="symbol">{{ item.symbol }}</span>
-          <span class="score-num">{{ item.score }}</span>
+          <span class="score-num count-slot">
+            <span class="count-sizer" aria-hidden="true">{{ item.score }}</span>
+            <span [appCount]="item.score"></span>
+          </span>
           <span class="outcome">{{ item.outcome }}</span>
           <span class="chg" [class.up]="item.up" [class.down]="!item.up">
             {{ item.up ? 'Up' : 'Down' }} {{ move(item.forwardReturn) }}
@@ -108,10 +111,10 @@
 @if (history().length) {
   <section class="section" aria-labelledby="history-title">
     <div class="section-head">
-      <h2 id="history-title">Lookups on this machine</h2>
-      <p>Stored in SQLite, or in MySQL when that provider is selected.</p>
+    <h2 id="history-title" class="reveal" appReveal>Lookups on this machine</h2>
+    <p class="reveal" appReveal="1">Stored in SQLite, or in MySQL when that provider is selected.</p>
     </div>
-    <div class="table-wrap">
+    <div class="table-wrap reveal" appReveal="2">
       <table>
         <thead>
           <tr>

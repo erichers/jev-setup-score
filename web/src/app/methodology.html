@@ -1,16 +1,16 @@
 <article class="method" data-ready="true">
   <header>
-    <p class="kicker">Methodology</p>
-    <h1>How a score is made.</h1>
-    <p class="lede">
+    <p class="kicker reveal" appReveal>Methodology</p>
+    <h1 class="reveal" appReveal="1">How a score is made.</h1>
+    <p class="lede reveal" appReveal="2">
       The number is a logistic probability. Every input is on the score page, and the walk-forward
       test uses only information that was already known.
     </p>
   </header>
 
   <section class="method-block" aria-labelledby="question-title">
-    <h2 id="question-title">The question</h2>
-    <div class="prose">
+    <h2 id="question-title" class="reveal" appReveal>The question</h2>
+    <div class="prose reveal" appReveal="1">
       <p>
         For a horizon H of 5, 10, or 20 sessions, the label is whether the close H sessions ahead
         is higher than the close on the feature day.
@@ -22,8 +22,8 @@
   </section>
 
   <section class="method-block" aria-labelledby="inputs-title">
-    <h2 id="inputs-title">The inputs</h2>
-    <div class="prose">
+    <h2 id="inputs-title" class="reveal" appReveal>The inputs</h2>
+    <div class="prose reveal" appReveal="1">
       <p>Thirteen numbers, daily unless noted:</p>
       <ul>
         <li>Slope of the 20-day average, and slope of the 50-day average.</li>
@@ -40,8 +40,8 @@
   </section>
 
   <section class="method-block" aria-labelledby="model-title">
-    <h2 id="model-title">The model</h2>
-    <div class="prose">
+    <h2 id="model-title" class="reveal" appReveal>The model</h2>
+    <div class="prose reveal" appReveal="1">
       <p>Each input is standardized on the training rows:</p>
       <p class="formula">z = (x - mean) / standard deviation</p>
       <p>Logistic regression turns those z values into a probability:</p>
@@ -53,11 +53,14 @@
         The page lists each weight and the log-odds that input adds today.
       </p>
     </div>
+    <app-flow />
   </section>
 
+  <app-surface />
+
   <section class="method-block" aria-labelledby="walk-title">
-    <h2 id="walk-title">Walk-forward test</h2>
-    <div class="prose">
+    <h2 id="walk-title" class="reveal" appReveal>Walk-forward test</h2>
+    <div class="prose reveal" appReveal="1">
       <p>
         The calendar is split into a train window of 504 sessions and a test window of 63. The
         window then steps forward. A training row is eligible only when its label bar is strictly
@@ -78,8 +81,8 @@
   </section>
 
   <section class="method-block" aria-labelledby="data-title">
-    <h2 id="data-title">Where the bars come from</h2>
-    <div class="prose">
+    <h2 id="data-title" class="reveal" appReveal>Where the bars come from</h2>
+    <div class="prose reveal" appReveal="1">
       <p>
         Live daily bars come from Yahoo Finance, adjusted for splits, then from Stooq if Yahoo
         fails. Stooq bars are not split adjusted. If both fail, or live fetch is off, the app uses
@@ -95,8 +98,8 @@
   </section>
 
   <section class="method-block" aria-labelledby="limit-title">
-    <h2 id="limit-title">What this is not</h2>
-    <div class="prose">
+    <h2 id="limit-title" class="reveal" appReveal>What this is not</h2>
+    <div class="prose reveal" appReveal="1">
       <p>
         Educational tool. Not financial advice. A score is a model probability on past daily bars.
         It is not a forecast you should trade, and it is not a promise about the next close.

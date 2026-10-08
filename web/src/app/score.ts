@@ -3,15 +3,17 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Component, OnDestroy, effect, inject, signal } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
-import { type ECharts, init } from 'echarts/core';
+import { type ECharts, type EChartsCoreOption, init } from 'echarts/core';
 import { combineLatest } from 'rxjs';
 import { ApiService } from './api.service';
 import { calibrationOption, equityOption, macdOption, palette, priceOption, rsiOption } from './charts';
 import { Factor, HORIZONS, ScoreResponse } from './models';
+import { CountDirective, RevealDirective, easeRise, reduceMotion } from './motion';
 import { ThemeService } from './theme.service';
 
 @Component({
   selector: 'app-score',
+  imports: [RevealDirective, CountDirective],
   templateUrl: './score.html',
 })
 export class ScorePage implements OnDestroy {
@@ -23,6 +25,10 @@ export class ScorePage implements OnDestroy {
   private readonly charts = new Map<string, ECharts>();
   private request = 0;
   private resizeObserver?: ResizeObserver;
+  private chartObservers: IntersectionObserver[] = [];
+  private gaugeObserver?: IntersectionObserver;
+  private barObserver?: IntersectionObserver;
+  private timers: number[] = [];
 
   readonly horizons = HORIZONS;
   readonly data = signal<ScoreResponse | null>(null);
@@ -66,6 +72,10 @@ export class ScorePage implements OnDestroy {
 
   ngOnDestroy(): void {
     cancelAnimationFrame(this.anim);
+    this.gaugeObserver?.disconnect();
+    this.barObserver?.disconnect();
+    this.disconnectChartObservers();
+    this.clearTimers();
     this.disposeCharts();
     this.resizeObserver?.disconnect();
   }
@@ -133,6 +143,11 @@ export class ScorePage implements OnDestroy {
     return { width: `${width}%`, left: `${left}%` };
   }
 
+  barDelay(index: number): string {
+    if (!this.barsReady() || reduceMotion()) return '0ms';
+    return `${Math.min(index, 8) * 40}ms`;
+  }
+
   pct(value: number, digits = 1): string {
     return (value * 100).toFixed(digits) + '%';
   }
@@ -171,6 +186,10 @@ export class ScorePage implements OnDestroy {
     this.barsReady.set(false);
     this.shown.set(0);
     cancelAnimationFrame(this.anim);
+    this.gaugeObserver?.disconnect();
+    this.barObserver?.disconnect();
+    this.disconnectChartObservers();
+    this.clearTimers();
     this.disposeCharts();
     this.data.set(null);
     this.title.setTitle(`${ticker} setup score · Jev`);
@@ -179,8 +198,12 @@ export class ScorePage implements OnDestroy {
         if (id !== this.request) return;
         this.data.set(score);
         this.loading.set(false);
-        this.playScore(score.score);
-        setTimeout(() => this.paint(score), 0);
+        setTimeout(() => {
+          if (id !== this.request) return;
+          this.paint(score);
+          this.armGauge(score.score);
+          this.armBars();
+        }, 0);
       },
       error: (err: HttpErrorResponse) => {
         if (id !== this.request) return;
@@ -191,44 +214,128 @@ export class ScorePage implements OnDestroy {
     });
   }
 
-  private playScore(target: number): void {
+  private armGauge(target: number): void {
+    this.gaugeObserver?.disconnect();
     cancelAnimationFrame(this.anim);
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce) {
+    if (reduceMotion()) {
       this.shown.set(target);
+      return;
+    }
+    const el = document.querySelector('.gauge');
+    if (!el) {
+      this.playScore(target);
+      return;
+    }
+    this.gaugeObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          this.gaugeObserver?.disconnect();
+          this.playScore(target);
+        }
+      },
+      { threshold: 0.35 },
+    );
+    this.gaugeObserver.observe(el);
+  }
+
+  private armBars(): void {
+    this.barObserver?.disconnect();
+    if (reduceMotion()) {
       this.barsReady.set(true);
       return;
     }
-    this.barsReady.set(false);
+    const el = document.querySelector('.factor-list');
+    if (!el) {
+      this.barsReady.set(true);
+      return;
+    }
+    this.barObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          this.barsReady.set(true);
+          this.barObserver?.disconnect();
+        }
+      },
+      { threshold: 0.2 },
+    );
+    this.barObserver.observe(el);
+  }
+
+  private playScore(target: number): void {
+    cancelAnimationFrame(this.anim);
     const start = performance.now();
-    const duration = 220;
+    const duration = 360;
     const step = (now: number) => {
       const t = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - t, 3);
-      this.shown.set(Math.round(target * eased));
-      if (t < 1) {
-        this.anim = requestAnimationFrame(step);
-      }
+      this.shown.set(Math.round(target * easeRise(t)));
+      if (t < 1) this.anim = requestAnimationFrame(step);
     };
     this.shown.set(0);
     this.anim = requestAnimationFrame(step);
-    window.setTimeout(() => this.barsReady.set(true), 50);
   }
 
   private paint(score: ScoreResponse): void {
+    this.clearTimers();
+    this.disconnectChartObservers();
     const colors = palette(this.themes.theme());
-    this.mount('price-chart', priceOption(score.chart, colors));
-    this.mount('rsi-chart', rsiOption(score.chart, colors));
-    this.mount('macd-chart', macdOption(score.chart, colors));
-    this.mount('calibration-chart', calibrationOption(score, colors));
-    this.mount('equity-chart', equityOption(score, colors));
+    const reduce = reduceMotion();
+    this.mountWhenVisible('price-chart', priceOption(score.chart, colors));
+    this.mountWhenVisible('rsi-chart', rsiOption(score.chart, colors), () => this.fadeArea('rsi-chart', 'rsi', colors.accent, reduce));
+    this.mountWhenVisible('macd-chart', macdOption(score.chart, colors));
+    this.mountWhenVisible('calibration-chart', calibrationOption(score, colors));
+    this.mountWhenVisible('equity-chart', equityOption(score, colors, reduce), () => this.fadeArea('equity-chart', 'strategy', colors.accent, reduce));
     const root = document.getElementById('price-chart');
-    if (root && this.resizeObserver) {
-      this.resizeObserver.observe(root);
-    }
+    if (root && this.resizeObserver) this.resizeObserver.observe(root);
   }
 
-  private mount(id: string, option: ReturnType<typeof priceOption>): void {
+  private fadeArea(id: string, seriesId: string, color: string, reduce: boolean): void {
+    if (reduce) return;
+    this.later(() => {
+      const chart = this.charts.get(id);
+      if (!chart || chart.isDisposed()) return;
+      chart.setOption({ series: [{ id: seriesId, areaStyle: { color, opacity: 0.14 } }] });
+    }, 380);
+  }
+
+  private mountWhenVisible(id: string, option: EChartsCoreOption, after?: () => void): void {
+    const element = document.getElementById(id);
+    if (!element) return;
+    const run = () => {
+      this.mount(id, option);
+      after?.();
+    };
+    if (reduceMotion()) {
+      run();
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          observer.disconnect();
+          run();
+        }
+      },
+      { threshold: 0.2 },
+    );
+    observer.observe(element);
+    this.chartObservers.push(observer);
+  }
+
+  private later(fn: () => void, ms: number): void {
+    this.timers.push(window.setTimeout(fn, ms));
+  }
+
+  private clearTimers(): void {
+    for (const id of this.timers) window.clearTimeout(id);
+    this.timers = [];
+  }
+
+  private disconnectChartObservers(): void {
+    for (const observer of this.chartObservers) observer.disconnect();
+    this.chartObservers = [];
+  }
+
+  private mount(id: string, option: EChartsCoreOption): void {
     const element = document.getElementById(id);
     if (!element) return;
     let chart = this.charts.get(id);

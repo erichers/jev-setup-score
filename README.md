@@ -43,10 +43,18 @@ Phone width, light and dark.
 - Cached bars for 15 names: SPY, QQQ, AAPL, NVDA, TSLA, MSFT, AMZN, GOOGL, META, AMD, JPM, NFLX, AVGO, COST, and WMT.
 - A home section of real past scores: the newest out-of-sample call for each name, and what the close did afterward.
 - A methodology page with the formulas.
-- Light and dark mode. The toggle is remembered. With no saved choice, the app follows the system theme. Motion follows `prefers-reduced-motion`.
+- Light and dark mode. The toggle is remembered. With no saved choice, the app follows the system theme. Color changes ease over 280ms.
 - A PDF report of the score.
 - Local history of score lookups, in SQLite by default or MySQL when you select it.
 - A small Ulric wordmark in the footer. The app name leads in the header.
+
+## Motion
+
+Entrances fade and rise 12px over 340ms, with a short stagger, on `cubic-bezier(.2, .7, .2, 1)`. Route changes crossfade the page and leave the header in place. Scores, the likelihood, and the walk-forward stats count up. The gauge, factor bars, and charts draw in when they scroll into view. The RSI wash and the equity area fill after the line.
+
+The methodology page draws an SVG of the path from bars to a score, including the train and test windows. Under that, a three.js surface (r170) shows the logistic probability over two inputs. Drag to orbit. three.js loads only with that view, the pixel ratio is capped at 2, and the render loop pauses when the canvas leaves the screen.
+
+`prefers-reduced-motion` makes those changes instant, skips the 3D loop, and keeps the still drawing of the surface.
 
 ## Architecture
 

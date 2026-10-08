@@ -54,12 +54,16 @@ export function palette(theme: 'light' | 'dark'): ChartPalette {
   };
 }
 
+function reduceMotionChart(): boolean {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 function base(colors: ChartPalette, dates: string[]): EChartsCoreOption {
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduce = reduceMotionChart();
   return {
     backgroundColor: 'transparent',
     animation: !reduce,
-    animationDuration: 220,
+    animationDuration: reduce ? 0 : 360,
     animationEasing: 'cubicOut',
     textStyle: { fontFamily: 'IBM Plex Mono, ui-monospace, monospace', color: colors.muted },
     grid: { left: 8, right: 12, top: 32, bottom: 8, containLabel: true },
@@ -114,9 +118,9 @@ export function priceOption(points: ChartPoint[], colors: ChartPalette): ECharts
           borderColor0: colors.down,
         },
       },
-      line('20-day', points.map((point) => point.ma20), colors.ma20),
-      line('50-day', points.map((point) => point.ma50), colors.ma50),
-      line('200-day', points.map((point) => point.ma200), colors.ma200),
+      line('20-day', points.map((point) => point.ma20), colors.ma20, 0),
+      line('50-day', points.map((point) => point.ma50), colors.ma50, 50),
+      line('200-day', points.map((point) => point.ma200), colors.ma200, 100),
     ],
   };
 }
@@ -128,12 +132,14 @@ export function rsiOption(points: ChartPoint[], colors: ChartPalette): EChartsCo
     yAxis: { ...yAxis(colors), min: 0, max: 100 },
     series: [
       {
+        id: 'rsi',
         name: 'RSI',
         type: 'line',
         data: points.map((point) => point.rsi),
         showSymbol: false,
         lineStyle: { width: 1.6, color: colors.accent },
         itemStyle: { color: colors.accent },
+        areaStyle: { color: colors.accent, opacity: reduceMotionChart() ? 0.14 : 0 },
         markLine: {
           symbol: 'none',
           label: { color: colors.muted, fontSize: 10 },
@@ -198,7 +204,7 @@ export function calibrationOption(score: ScoreResponse, colors: ChartPalette): E
   };
 }
 
-export function equityOption(score: ScoreResponse, colors: ChartPalette): EChartsCoreOption {
+export function equityOption(score: ScoreResponse, colors: ChartPalette, showArea: boolean): EChartsCoreOption {
   const dates = score.backtest.equity.map((point) => point.date);
   return {
     ...base(colors, dates),
@@ -209,13 +215,17 @@ export function equityOption(score: ScoreResponse, colors: ChartPalette): EChart
     },
     yAxis: yAxis(colors, true),
     series: [
-      line('Score rule', score.backtest.equity.map((point) => point.strategy), colors.accent),
-      line('Buy and hold', score.backtest.equity.map((point) => point.buyHold), colors.ma200),
+      {
+        ...line('Score rule', score.backtest.equity.map((point) => point.strategy), colors.accent, 0),
+        id: 'strategy',
+        areaStyle: { color: colors.accent, opacity: showArea ? 0.14 : 0 },
+      },
+      line('Buy and hold', score.backtest.equity.map((point) => point.buyHold), colors.ma200, 80),
     ],
   };
 }
 
-function line(name: string, data: Array<number | null>, color: string) {
+function line(name: string, data: Array<number | null>, color: string, delay = 0) {
   return {
     name,
     type: 'line' as const,
@@ -223,5 +233,8 @@ function line(name: string, data: Array<number | null>, color: string) {
     showSymbol: false,
     lineStyle: { width: 1.5, color },
     itemStyle: { color },
+    animationDuration: 360,
+    animationEasing: 'cubicOut' as const,
+    animationDelay: delay,
   };
 }

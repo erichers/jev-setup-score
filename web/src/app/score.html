@@ -1,5 +1,5 @@
 <article class="score" [attr.data-ready]="data() ? 'true' : 'false'">
-  <form class="query panel" (submit)="submit($event)">
+  <form class="query panel reveal" appReveal (submit)="submit($event)">
     <label class="field">
       <span>Ticker</span>
       <input class="ticker-input compact" [value]="draft()" (input)="onTicker($event)" maxlength="12" autocomplete="off" spellcheck="false" />
@@ -20,7 +20,7 @@
     <a class="btn ghost" [href]="pdfHref()">Download PDF</a>
   </form>
 
-  <p class="advice">Educational tool. Not financial advice.</p>
+  <p class="advice reveal" appReveal="1">Educational tool. Not financial advice.</p>
 
   @if (loading()) {
     <div class="skeleton" aria-busy="true" aria-live="polite">
@@ -32,7 +32,7 @@
   } @else if (error()) {
     <p class="panel form-error" role="alert">{{ error() }}</p>
   } @else if (data(); as score) {
-    <section class="score-top" aria-label="Score">
+    <section class="score-top reveal" appReveal="2" aria-label="Score">
       <div class="panel gauge-panel">
         <svg class="gauge" viewBox="0 0 240 210" role="img" [attr.aria-label]="'Setup score ' + score.score + ' out of 100'">
           <circle class="gauge-track" cx="120" cy="118" r="78" [attr.stroke-dasharray]="arc(shown()).track" transform="rotate(135 120 118)"></circle>
@@ -49,7 +49,10 @@
       <div class="panel read-panel">
         <p class="kicker">{{ score.ticker }} · {{ score.name }}</p>
         <p class="likelihood-label">Up-move likelihood</p>
-        <p class="likelihood">{{ pct(score.probability) }}</p>
+        <p class="likelihood count-slot">
+          <span class="count-sizer" aria-hidden="true">{{ pct(score.probability) }}</span>
+          <span [appCount]="score.probability * 100" [countDigits]="1" countSuffix="%"></span>
+        </p>
         <p class="horizon-line">over the next {{ score.horizon }} sessions</p>
         <p class="summary">{{ score.summary }}</p>
         <p class="meta">
@@ -60,7 +63,7 @@
       </div>
     </section>
 
-    <section class="panel" aria-labelledby="factors-title">
+    <section class="panel reveal" appReveal="3" aria-labelledby="factors-title">
       <div class="section-head">
         <h2 id="factors-title">What is pulling the score</h2>
         <p>Each bar is log-odds added by that input. Positive bars raise the chance of a higher close.</p>
@@ -80,7 +83,7 @@
                 [class.down]="factor.contribution < 0"
                 [style.width]="barStyle(factor, score.factors)['width']"
                 [style.left]="barStyle(factor, score.factors)['left']"
-                [style.transition-delay]="(barsReady() ? i * 45 : 0) + 'ms'"
+                [style.transition-delay]="barDelay(i)"
               ></span>
             </div>
             <p class="reading">{{ factor.reading }} <span class="display">{{ factor.display }}</span></p>
@@ -89,7 +92,7 @@
       </ol>
     </section>
 
-    <section class="panel" aria-labelledby="price-title">
+    <section class="panel reveal" appReveal="4" aria-labelledby="price-title">
       <div class="section-head">
         <h2 id="price-title">Price and moving averages</h2>
         <p>Last year of daily bars. Lime is the 20-day average. Gray is the 50-day and the 200-day.</p>
@@ -97,7 +100,7 @@
       <div id="price-chart" class="chart" role="img" [attr.aria-label]="'Price chart for ' + score.ticker"></div>
     </section>
 
-    <section class="split">
+    <section class="split reveal" appReveal="5">
       <div class="panel">
         <div class="section-head">
           <h2>RSI (14)</h2>
@@ -114,7 +117,7 @@
       </div>
     </section>
 
-    <section class="panel" id="backtest" aria-labelledby="backtest-title">
+    <section class="panel reveal" id="backtest" appReveal="6" aria-labelledby="backtest-title">
       <div class="section-head">
         <h2 id="backtest-title">Walk-forward backtest</h2>
         <p>
@@ -123,12 +126,12 @@
         </p>
       </div>
       <ul class="stats">
-        <li><span>Hit rate</span><strong class="num">{{ pct(score.backtest.hitRate) }}</strong></li>
-        <li><span>Base rate</span><strong class="num">{{ pct(score.backtest.baseRate) }}</strong></li>
-        <li><span>Brier</span><strong class="num">{{ fixed(score.backtest.brier) }}</strong></li>
-        <li><span>Base Brier</span><strong class="num">{{ fixed(score.backtest.baseRateBrier) }}</strong></li>
-        <li><span>Folds</span><strong class="num">{{ score.backtest.foldCount }}</strong></li>
-        <li><span>Test rows</span><strong class="num">{{ score.backtest.predictionCount }}</strong></li>
+        <li><span>Hit rate</span><strong class="num count-slot"><span class="count-sizer" aria-hidden="true">{{ pct(score.backtest.hitRate) }}</span><span [appCount]="score.backtest.hitRate * 100" [countDigits]="1" countSuffix="%"></span></strong></li>
+        <li><span>Base rate</span><strong class="num count-slot"><span class="count-sizer" aria-hidden="true">{{ pct(score.backtest.baseRate) }}</span><span [appCount]="score.backtest.baseRate * 100" [countDigits]="1" countSuffix="%"></span></strong></li>
+        <li><span>Brier</span><strong class="num count-slot"><span class="count-sizer" aria-hidden="true">{{ fixed(score.backtest.brier) }}</span><span [appCount]="score.backtest.brier" [countDigits]="3"></span></strong></li>
+        <li><span>Base Brier</span><strong class="num count-slot"><span class="count-sizer" aria-hidden="true">{{ fixed(score.backtest.baseRateBrier) }}</span><span [appCount]="score.backtest.baseRateBrier" [countDigits]="3"></span></strong></li>
+        <li><span>Folds</span><strong class="num count-slot"><span class="count-sizer" aria-hidden="true">{{ score.backtest.foldCount }}</span><span [appCount]="score.backtest.foldCount"></span></strong></li>
+        <li><span>Test rows</span><strong class="num count-slot"><span class="count-sizer" aria-hidden="true">{{ score.backtest.predictionCount }}</span><span [appCount]="score.backtest.predictionCount"></span></strong></li>
       </ul>
       <p class="honesty">{{ score.backtest.honesty }}</p>
       <p class="rule">
@@ -155,7 +158,7 @@
       </div>
     </section>
 
-    <section class="panel" aria-labelledby="coeff-title">
+    <section class="panel reveal" appReveal="7" aria-labelledby="coeff-title">
       <div class="section-head">
         <h2 id="coeff-title">Model coefficients</h2>
         <p>

@@ -2,10 +2,11 @@ import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService } from './api.service';
 import { ExampleOutcome, HORIZONS, HistoryItem, TickerSummary } from './models';
+import { CountDirective, RevealDirective } from './motion';
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink],
+  imports: [RouterLink, RevealDirective, CountDirective],
   templateUrl: './home.html',
 })
 export class HomePage {
