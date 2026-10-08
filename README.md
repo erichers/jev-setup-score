@@ -16,6 +16,8 @@ Light mode, desktop.
 
 ![Methodology](docs/screenshots/methodology-light-desktop.png)
 
+![Past scores](docs/screenshots/examples-light-desktop.png)
+
 Dark mode, desktop.
 
 ![Home in dark mode](docs/screenshots/home-dark-desktop.png)
