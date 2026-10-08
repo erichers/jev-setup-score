@@ -1,0 +1,107 @@
+<article class="method" data-ready="true">
+  <header>
+    <p class="kicker">Methodology</p>
+    <h1>How a score is made.</h1>
+    <p class="lede">
+      The number is a logistic probability. Every input is on the score page, and the walk-forward
+      test uses only information that was already known.
+    </p>
+  </header>
+
+  <section class="method-block" aria-labelledby="question-title">
+    <h2 id="question-title">The question</h2>
+    <div class="prose">
+      <p>
+        For a horizon H of 5, 10, or 20 sessions, the label is whether the close H sessions ahead
+        is higher than the close on the feature day.
+      </p>
+      <p class="formula">forward return = Close(t + H) / Close(t) - 1</p>
+      <p class="formula">label = 1 when forward return &gt; 0, else 0</p>
+      <p>A feature row at day t uses only bars through t. Later prices never enter the inputs.</p>
+    </div>
+  </section>
+
+  <section class="method-block" aria-labelledby="inputs-title">
+    <h2 id="inputs-title">The inputs</h2>
+    <div class="prose">
+      <p>Thirteen numbers, daily unless noted:</p>
+      <ul>
+        <li>Slope of the 20-day average, and slope of the 50-day average.</li>
+        <li>Slope of the 10-week average, from a weekly resample.</li>
+        <li>Alignment of the 20, 50, and 200 day averages.</li>
+        <li>RSI(14), Wilder smoothing.</li>
+        <li>MACD(12, 26, 9) histogram, and the slope of that histogram. The EMA is seeded with a simple average.</li>
+        <li>ATR(14) as a percent of price. Wilder smoothing.</li>
+        <li>Volume versus its 20-day average.</li>
+        <li>Distance from the 20, 50, and 200 day averages.</li>
+        <li>The return over the last 10 sessions.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="method-block" aria-labelledby="model-title">
+    <h2 id="model-title">The model</h2>
+    <div class="prose">
+      <p>Each input is standardized on the training rows:</p>
+      <p class="formula">z = (x - mean) / standard deviation</p>
+      <p>Logistic regression turns those z values into a probability:</p>
+      <p class="formula">P(up) = 1 / (1 + exp(-(intercept + sum of weight * z)))</p>
+      <p class="formula">score = round(P(up) * 100)</p>
+      <p>
+        Training maximizes an L2-penalized log likelihood with Newton steps. The intercept is not
+        penalized. A weight is the change in log-odds for one standard deviation of that input.
+        The page lists each weight and the log-odds that input adds today.
+      </p>
+    </div>
+  </section>
+
+  <section class="method-block" aria-labelledby="walk-title">
+    <h2 id="walk-title">Walk-forward test</h2>
+    <div class="prose">
+      <p>
+        The calendar is split into a train window of 504 sessions and a test window of 63. The
+        window then steps forward. A training row is eligible only when its label bar is strictly
+        before the test window:
+      </p>
+      <p class="formula">featureBarIndex + horizon &lt; testStartBarIndex</p>
+      <p>
+        Hit rate is the share of test rows whose predicted side matched the label, using 0.5 as the
+        cut. Brier score is the mean squared error of the probability. Both are shown next to the
+        base rate, which is the share of up closes in the same test rows. If the model does not
+        beat that base rate, the page says so.
+      </p>
+      <p>
+        The equity curve is a separate rule: long when the rounded score is above the threshold,
+        otherwise flat. Trades do not overlap. It is compared with buy and hold on the same ticker.
+      </p>
+    </div>
+  </section>
+
+  <section class="method-block" aria-labelledby="data-title">
+    <h2 id="data-title">Where the bars come from</h2>
+    <div class="prose">
+      <p>
+        Live daily bars come from Yahoo Finance, adjusted for splits, then from Stooq if Yahoo
+        fails. Stooq bars are not split adjusted. If both fail, or live fetch is off, the app uses
+        the cached files for SPY, QQQ, AAPL, NVDA, TSLA, MSFT, AMZN, GOOGL, META, AMD, JPM, NFLX,
+        AVGO, COST, and WMT. The score page says whether the result used live or cached data.
+      </p>
+      <p>
+        The examples on the home page are the newest walk-forward prediction for each of those
+        names at a 10-session horizon. The outcome in each line is the forward return that the
+        test already knew.
+      </p>
+    </div>
+  </section>
+
+  <section class="method-block" aria-labelledby="limit-title">
+    <h2 id="limit-title">What this is not</h2>
+    <div class="prose">
+      <p>
+        Educational tool. Not financial advice. A score is a model probability on past daily bars.
+        It is not a forecast you should trade, and it is not a promise about the next close.
+      </p>
+      <p><a routerLink="/">Back to the score</a></p>
+    </div>
+  </section>
+</article>

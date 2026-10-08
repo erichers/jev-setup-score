@@ -12,7 +12,7 @@ export class ThemeService {
       const theme = this.theme();
       document.documentElement.dataset['theme'] = theme;
       document.documentElement.style.colorScheme = theme;
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0b1220' : '#f6f8fa');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0b1220' : '#f6f1ea');
       if (this.persist) {
         localStorage.setItem(KEY, theme);
       }

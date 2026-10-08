@@ -7,6 +7,31 @@ export interface TickerSummary {
   changePercent: number;
 }
 
+export interface ExampleOutcome {
+  symbol: string;
+  name: string;
+  featureDate: string;
+  labelDate: string;
+  score: number;
+  probability: number;
+  forwardReturn: number;
+  up: boolean;
+  outcome: string;
+}
+
+export interface HistoryItem {
+  id: number;
+  symbol: string;
+  horizon: number;
+  threshold: number;
+  score: number;
+  probability: number;
+  asOf: string;
+  dataSource: string;
+  summary: string;
+  createdUtc: string;
+}
+
 export interface Factor {
   key: string;
   label: string;
@@ -87,3 +112,21 @@ export interface ScoreResponse {
 }
 
 export const HORIZONS = [5, 10, 20] as const;
+
+export const EXAMPLE_TICKERS = [
+  'SPY',
+  'QQQ',
+  'AAPL',
+  'NVDA',
+  'TSLA',
+  'MSFT',
+  'AMZN',
+  'GOOGL',
+  'META',
+  'AMD',
+  'JPM',
+  'NFLX',
+  'AVGO',
+  'COST',
+  'WMT',
+] as const;

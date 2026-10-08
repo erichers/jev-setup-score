@@ -31,7 +31,10 @@ export class ScorePage implements OnDestroy {
   readonly draft = signal('');
   readonly horizon = signal(10);
   readonly threshold = signal(60);
+  readonly shown = signal(0);
+  readonly barsReady = signal(false);
   readonly ticks = [0, 50, 100].map((score) => tick(score));
+  private anim = 0;
 
   constructor() {
     combineLatest([this.route.paramMap, this.route.queryParamMap])
@@ -62,6 +65,7 @@ export class ScorePage implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    cancelAnimationFrame(this.anim);
     this.disposeCharts();
     this.resizeObserver?.disconnect();
   }
@@ -120,6 +124,10 @@ export class ScorePage implements OnDestroy {
     const max = Math.max(...factors.map((item) => Math.abs(item.contribution)), 0.0001);
     const width = (Math.abs(factor.contribution) / max) * 50;
     const left = factor.contribution >= 0 ? 50 : 50 - width;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduce && !this.barsReady()) {
+      return { width: '0%', left: '50%' };
+    }
     return { width: `${width}%`, left: `${left}%` };
   }
 
@@ -158,6 +166,9 @@ export class ScorePage implements OnDestroy {
     const id = ++this.request;
     this.loading.set(true);
     this.error.set('');
+    this.barsReady.set(false);
+    this.shown.set(0);
+    cancelAnimationFrame(this.anim);
     this.disposeCharts();
     this.data.set(null);
     this.title.setTitle(`${ticker} setup score · Jev`);
@@ -166,6 +177,7 @@ export class ScorePage implements OnDestroy {
         if (id !== this.request) return;
         this.data.set(score);
         this.loading.set(false);
+        this.playScore(score.score);
         setTimeout(() => this.paint(score), 0);
       },
       error: (err: HttpErrorResponse) => {
@@ -175,6 +187,30 @@ export class ScorePage implements OnDestroy {
         this.loading.set(false);
       },
     });
+  }
+
+  private playScore(target: number): void {
+    cancelAnimationFrame(this.anim);
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) {
+      this.shown.set(target);
+      this.barsReady.set(true);
+      return;
+    }
+    this.barsReady.set(false);
+    const start = performance.now();
+    const duration = 900;
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      this.shown.set(Math.round(target * eased));
+      if (t < 1) {
+        this.anim = requestAnimationFrame(step);
+      }
+    };
+    this.shown.set(0);
+    this.anim = requestAnimationFrame(step);
+    window.setTimeout(() => this.barsReady.set(true), 50);
   }
 
   private paint(score: ScoreResponse): void {

@@ -8,7 +8,11 @@ public class CacheFileTests
     public void ShippedCache_CoversTheDemoUniverse()
     {
         var root = RepoRoot();
-        string[] symbols = ["SPY", "QQQ", "AAPL", "NVDA", "TSLA", "MSFT"];
+        string[] symbols =
+        [
+            "SPY", "QQQ", "AAPL", "NVDA", "TSLA", "MSFT",
+            "AMZN", "GOOGL", "META", "AMD", "JPM", "NFLX", "AVGO", "COST", "WMT",
+        ];
         foreach (var symbol in symbols)
         {
             var path = Path.Combine(root, "data", "cache", symbol + ".json");

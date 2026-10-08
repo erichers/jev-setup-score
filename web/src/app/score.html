@@ -35,13 +35,13 @@
     <section class="score-top" aria-label="Score">
       <div class="panel gauge-panel">
         <svg class="gauge" viewBox="0 0 240 210" role="img" [attr.aria-label]="'Setup score ' + score.score + ' out of 100'">
-          <circle class="gauge-track" cx="120" cy="118" r="78" [attr.stroke-dasharray]="arc(score.score).track" transform="rotate(135 120 118)"></circle>
-          <circle class="gauge-value" cx="120" cy="118" r="78" [attr.stroke-dasharray]="arc(score.score).value" transform="rotate(135 120 118)"></circle>
+          <circle class="gauge-track" cx="120" cy="118" r="78" [attr.stroke-dasharray]="arc(shown()).track" transform="rotate(135 120 118)"></circle>
+          <circle class="gauge-value" cx="120" cy="118" r="78" [attr.stroke-dasharray]="arc(shown()).value" transform="rotate(135 120 118)"></circle>
           @for (mark of ticks; track mark.score) {
             <line [attr.x1]="mark.x1" [attr.y1]="mark.y1" [attr.x2]="mark.x2" [attr.y2]="mark.y2" class="gauge-tick"></line>
             <text class="gauge-tick-label" [attr.x]="mark.lx" [attr.y]="mark.ly" text-anchor="middle">{{ mark.score }}</text>
           }
-          <text class="gauge-num" x="120" y="124" text-anchor="middle">{{ score.score }}</text>
+          <text class="gauge-num" x="120" y="128" text-anchor="middle">{{ shown() }}</text>
           <text class="gauge-unit" x="120" y="146" text-anchor="middle">SCORE</text>
         </svg>
         <p class="gauge-caption">Rounded likelihood, 0 to 100</p>
@@ -66,7 +66,7 @@
         <p>Each bar is log-odds added by that input. Positive bars raise the chance of a higher close.</p>
       </div>
       <ol class="factor-list">
-        @for (factor of score.factors; track factor.key) {
+        @for (factor of score.factors; track factor.key; let i = $index) {
           <li>
             <div class="factor-head">
               <span>{{ factor.label }}</span>
@@ -74,7 +74,14 @@
             </div>
             <div class="bar-track" aria-hidden="true">
               <span class="bar-zero"></span>
-              <span class="bar-fill" [class.up]="factor.contribution >= 0" [class.down]="factor.contribution < 0" [style.width]="barStyle(factor, score.factors)['width']" [style.left]="barStyle(factor, score.factors)['left']"></span>
+              <span
+                class="bar-fill"
+                [class.up]="factor.contribution >= 0"
+                [class.down]="factor.contribution < 0"
+                [style.width]="barStyle(factor, score.factors)['width']"
+                [style.left]="barStyle(factor, score.factors)['left']"
+                [style.transition-delay]="(barsReady() ? i * 45 : 0) + 'ms'"
+              ></span>
             </div>
             <p class="reading">{{ factor.reading }} <span class="display">{{ factor.display }}</span></p>
           </li>
@@ -85,7 +92,7 @@
     <section class="panel" aria-labelledby="price-title">
       <div class="section-head">
         <h2 id="price-title">Price and moving averages</h2>
-        <p>Last year of daily bars. Teal is 20-day, blue is 50-day, gold is 200-day.</p>
+        <p>Last year of daily bars. Teal is the 20-day average, blue is the 50-day, terracotta is the 200-day.</p>
       </div>
       <div id="price-chart" class="chart" role="img" [attr.aria-label]="'Price chart for ' + score.ticker"></div>
     </section>

@@ -1,6 +1,8 @@
 using System.Globalization;
 using JevSetupScore.Api.Contracts;
+using JevSetupScore.Api.Data;
 using JevSetupScore.Core;
+using Microsoft.EntityFrameworkCore;
 
 namespace JevSetupScore.Api.Services;
 
@@ -31,7 +33,7 @@ public sealed class Study
     public required Dictionary<string, FeatureRow> Latest { get; init; }
 }
 
-public sealed class ScoreService(MarketDataService market, StudyCache cache, ILogger<ScoreService> logger)
+public sealed class ScoreService(MarketDataService market, StudyCache cache, AppDbContext db, ILogger<ScoreService> logger)
 {
     public async Task<ScoreResponse> ScoreAsync(string ticker, int horizon, int threshold, CancellationToken ct)
     {
@@ -79,7 +81,7 @@ public sealed class ScoreService(MarketDataService market, StudyCache cache, ILo
         var report = BacktestMath.Summarize(study.Predictions, loaded.Symbol, threshold, study.FoldCount);
         var name = await market.NameAsync(loaded.Symbol, ct);
 
-        return new ScoreResponse(
+        var response = new ScoreResponse(
             loaded.Symbol,
             name,
             horizon,
@@ -96,6 +98,91 @@ public sealed class ScoreService(MarketDataService market, StudyCache cache, ILo
             Coefficients(study.Model),
             ChartBuilder.Build(loaded.Bars).Select(ToChart).ToList(),
             ToBacktest(report));
+
+        db.ScoreQueries.Add(new ScoreQuery
+        {
+            Symbol = response.Ticker,
+            Horizon = response.Horizon,
+            Threshold = response.Threshold,
+            Score = response.Score,
+            Probability = response.Probability,
+            AsOf = latest.Date,
+            DataSource = response.DataSource,
+            Summary = response.Summary,
+            CreatedUtc = DateTime.UtcNow,
+        });
+        await db.SaveChangesAsync(ct);
+        return response;
+    }
+
+    public async Task<IReadOnlyList<ExampleOutcome>> ExamplesAsync(CancellationToken ct)
+    {
+        var study = await StudyForHorizonAsync(10, ct);
+        var names = await db.Tickers.AsNoTracking().ToDictionaryAsync(ticker => ticker.Symbol, ticker => ticker.Name, ct);
+        var latest = study.Predictions
+            .Where(prediction => MarketDataService.Universe.Any(ticker => ticker.Symbol == prediction.Ticker))
+            .GroupBy(prediction => prediction.Ticker, StringComparer.Ordinal)
+            .Select(group => group.OrderByDescending(prediction => prediction.Date).First())
+            .OrderByDescending(prediction => prediction.Date)
+            .ThenBy(prediction => prediction.Ticker, StringComparer.Ordinal)
+            .ToList();
+
+        return latest.Select(prediction =>
+        {
+            var score = Math.Clamp((int)Math.Round(prediction.Probability * 100, MidpointRounding.AwayFromZero), 0, 100);
+            var up = prediction.Label == 1;
+            var move = Math.Abs(prediction.ForwardReturn * 100).ToString("0.0", CultureInfo.InvariantCulture);
+            var direction = up ? "up" : "down";
+            var feature = prediction.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var label = prediction.LabelDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var known = MarketDataService.Universe.First(ticker => ticker.Symbol == prediction.Ticker);
+            return new ExampleOutcome(
+                prediction.Ticker,
+                names.GetValueOrDefault(prediction.Ticker) ?? known.Name,
+                feature,
+                label,
+                score,
+                prediction.Probability,
+                prediction.ForwardReturn,
+                up,
+                $"On {feature} the model scored {score}. By {label} the close was {direction} {move}%.");
+        }).ToList();
+    }
+
+    public async Task<IReadOnlyList<HistoryItem>> HistoryAsync(int limit, CancellationToken ct)
+    {
+        limit = Math.Clamp(limit, 1, 50);
+        var rows = await db.ScoreQueries.AsNoTracking()
+            .OrderByDescending(query => query.CreatedUtc)
+            .ThenByDescending(query => query.Id)
+            .Take(limit)
+            .ToListAsync(ct);
+        return rows.Select(query => new HistoryItem(
+            query.Id,
+            query.Symbol,
+            query.Horizon,
+            query.Threshold,
+            query.Score,
+            query.Probability,
+            query.AsOf.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            query.DataSource,
+            query.Summary,
+            query.CreatedUtc.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture))).ToList();
+    }
+
+    private async Task<Study> StudyForHorizonAsync(int horizon, CancellationToken ct)
+    {
+        var universe = await market.LoadAllAsync(ct);
+        var usable = universe
+            .Where(pair => pair.Value.Count >= 260)
+            .ToDictionary(pair => pair.Key, pair => (IReadOnlyList<Bar>)pair.Value, StringComparer.Ordinal);
+        if (usable.Count == 0)
+            throw new SetupException(422, "Not enough cached history to build examples.");
+
+        var stamp = string.Join("|", usable
+            .OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => $"{pair.Key}:{pair.Value.Count}:{pair.Value[^1].Date:yyyyMMdd}"));
+        return cache.GetOrBuild(horizon, stamp, () => Build(usable, horizon));
     }
 
     private Study Build(IReadOnlyDictionary<string, IReadOnlyList<Bar>> universe, int horizon)

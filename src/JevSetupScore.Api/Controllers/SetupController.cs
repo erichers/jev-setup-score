@@ -23,6 +23,32 @@ public sealed class SetupController(MarketDataService market, ScoreService score
         }
     }
 
+    [HttpGet("examples")]
+    public async Task<IActionResult> Examples(CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await scores.ExamplesAsync(ct));
+        }
+        catch (SetupException ex)
+        {
+            return StatusCode(ex.Status, new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("history")]
+    public async Task<IActionResult> History([FromQuery] int limit = 12, CancellationToken ct = default)
+    {
+        try
+        {
+            return Ok(await scores.HistoryAsync(limit, ct));
+        }
+        catch (SetupException ex)
+        {
+            return StatusCode(ex.Status, new { message = ex.Message });
+        }
+    }
+
     [HttpGet("score/{ticker}")]
     public async Task<IActionResult> Score(string ticker, [FromQuery] int horizon = 10, [FromQuery] int threshold = 60, CancellationToken ct = default)
     {

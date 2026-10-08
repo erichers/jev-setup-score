@@ -6,13 +6,33 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("Default") ?? "Data Source=jev.db";
-var dataSource = Regex.Match(connectionString, @"Data Source=([^;]+)", RegexOptions.IgnoreCase);
-if (dataSource.Success)
+var provider = builder.Configuration["Database:Provider"] ?? "Sqlite";
+var useMySql = provider.Equals("MySql", StringComparison.OrdinalIgnoreCase)
+    || provider.Equals("MySQL", StringComparison.OrdinalIgnoreCase);
+
+if (!useMySql)
 {
-    var directory = Path.GetDirectoryName(dataSource.Groups[1].Value);
-    if (!string.IsNullOrEmpty(directory))
-        Directory.CreateDirectory(directory);
+    var connectionString = builder.Configuration.GetConnectionString("Default") ?? "Data Source=jev.db";
+    var dataSource = Regex.Match(connectionString, @"Data Source=([^;]+)", RegexOptions.IgnoreCase);
+    if (dataSource.Success)
+    {
+        var directory = Path.GetDirectoryName(dataSource.Groups[1].Value);
+        if (!string.IsNullOrEmpty(directory))
+            Directory.CreateDirectory(directory);
+    }
+
+    builder.Services.AddDbContext<SqliteAppDbContext>(options => options.UseSqlite(connectionString));
+    builder.Services.AddScoped<AppDbContext>(sp => sp.GetRequiredService<SqliteAppDbContext>());
+}
+else
+{
+    var mysql = builder.Configuration.GetConnectionString("MySql");
+    if (string.IsNullOrWhiteSpace(mysql))
+        throw new InvalidOperationException("Database:Provider is MySql, but ConnectionStrings:MySql is empty.");
+
+    var version = ServerVersion.Parse(builder.Configuration["Database:MySqlVersion"] ?? "8.4.0-mysql");
+    builder.Services.AddDbContext<MysqlAppDbContext>(options => options.UseMySql(mysql, version));
+    builder.Services.AddScoped<AppDbContext>(sp => sp.GetRequiredService<MysqlAppDbContext>());
 }
 
 builder.Services.Configure<DataOptions>(builder.Configuration.GetSection("Data"));
@@ -22,12 +42,11 @@ builder.Services.PostConfigure<DataOptions>(options =>
         options.CacheDirectory = ResolveCacheDirectory(builder.Environment);
 });
 
-builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
 builder.Services.AddHttpClient<MarketDataService>(client =>
 {
     var seconds = builder.Configuration.GetValue("Data:HttpTimeoutSeconds", 8);
     client.Timeout = TimeSpan.FromSeconds(Math.Clamp(seconds, 2, 30));
-    client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; JevSetupScore/1.0; educational)");
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; JevSetupScore/1.1; educational)");
 });
 builder.Services.AddSingleton<StudyCache>();
 builder.Services.AddScoped<ScoreService>();

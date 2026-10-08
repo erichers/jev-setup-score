@@ -30,26 +30,26 @@ export interface ChartPalette {
 export function palette(theme: 'light' | 'dark'): ChartPalette {
   if (theme === 'dark') {
     return {
-      text: '#e8eef6',
-      muted: '#9aabbe',
-      line: 'rgba(232, 238, 246, 0.14)',
+      text: '#f6f1ea',
+      muted: '#b7c0cc',
+      line: 'rgba(246, 241, 234, 0.12)',
       up: '#5dcaa5',
-      down: '#f0a3a8',
+      down: '#e7a398',
       ma20: '#2dd4bf',
       ma50: '#8eacff',
-      ma200: '#e2c27a',
+      ma200: '#e08b6f',
       accent: '#2dd4bf',
     };
   }
   return {
-    text: '#0b1220',
-    muted: '#4d5c6d',
-    line: 'rgba(11, 18, 32, 0.12)',
-    up: '#0f7a56',
-    down: '#b42318',
-    ma20: '#0f8f74',
-    ma50: '#3454c6',
-    ma200: '#8a6230',
+    text: '#1c1917',
+    muted: '#6f655c',
+    line: 'rgba(28, 25, 23, 0.1)',
+    up: '#0f766e',
+    down: '#b5523a',
+    ma20: '#0f9e82',
+    ma50: '#3f6f8f',
+    ma200: '#d97757',
     accent: '#0f9e82',
   };
 }
@@ -59,14 +59,15 @@ function base(colors: ChartPalette, dates: string[]): EChartsCoreOption {
   return {
     backgroundColor: 'transparent',
     animation: !reduce,
-    animationDuration: 450,
+    animationDuration: 1200,
+    animationEasing: 'cubicOut',
     textStyle: { fontFamily: 'IBM Plex Mono, ui-monospace, monospace', color: colors.muted },
     grid: { left: 8, right: 12, top: 32, bottom: 8, containLabel: true },
     tooltip: {
       trigger: 'axis',
       backgroundColor: colors.text,
       borderWidth: 0,
-      textStyle: { color: colors.text === '#0b1220' ? '#f6f8fa' : '#0b1220', fontFamily: 'IBM Plex Mono, ui-monospace, monospace', fontSize: 12 },
+      textStyle: { color: colors.text === '#1c1917' ? '#f6f1ea' : '#1c1917', fontFamily: 'IBM Plex Mono, ui-monospace, monospace', fontSize: 12 },
     },
     xAxis: {
       type: 'category',

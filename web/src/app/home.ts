@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService } from './api.service';
-import { HORIZONS, TickerSummary } from './models';
+import { EXAMPLE_TICKERS, ExampleOutcome, HORIZONS, HistoryItem, TickerSummary } from './models';
 
 @Component({
   selector: 'app-home',
@@ -13,11 +13,16 @@ export class HomePage {
   private readonly router = inject(Router);
 
   readonly horizons = HORIZONS;
+  readonly exampleTickers = EXAMPLE_TICKERS;
   readonly ticker = signal('SPY');
   readonly horizon = signal<number>(10);
   readonly tickers = signal<TickerSummary[]>([]);
+  readonly examples = signal<ExampleOutcome[]>([]);
+  readonly history = signal<HistoryItem[]>([]);
   readonly loading = signal(true);
+  readonly examplesReady = signal(false);
   readonly error = signal('');
+  readonly exampleError = signal('');
 
   constructor() {
     this.api.tickers().subscribe({
@@ -29,6 +34,20 @@ export class HomePage {
         this.error.set('The ticker list did not load. Start the API and refresh.');
         this.loading.set(false);
       },
+    });
+    this.api.examples().subscribe({
+      next: (rows) => {
+        this.examples.set(rows);
+        this.examplesReady.set(true);
+      },
+      error: () => {
+        this.exampleError.set('Past scores are still training. Refresh in a moment.');
+        this.examplesReady.set(true);
+      },
+    });
+    this.api.history(6).subscribe({
+      next: (rows) => this.history.set(rows),
+      error: () => this.history.set([]),
     });
   }
 
@@ -59,5 +78,9 @@ export class HomePage {
   change(value: number): string {
     const text = Math.abs(value).toFixed(2) + '%';
     return value >= 0 ? 'Up ' + text : 'Down ' + text;
+  }
+
+  move(value: number): string {
+    return Math.abs(value * 100).toFixed(1) + '%';
   }
 }

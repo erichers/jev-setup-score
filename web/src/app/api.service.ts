@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { ScoreResponse, TickerSummary } from './models';
+import { ExampleOutcome, HistoryItem, ScoreResponse, TickerSummary } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -8,6 +8,15 @@ export class ApiService {
 
   tickers() {
     return this.http.get<TickerSummary[]>('/api/tickers');
+  }
+
+  examples() {
+    return this.http.get<ExampleOutcome[]>('/api/examples');
+  }
+
+  history(limit = 8) {
+    const params = new HttpParams().set('limit', String(limit));
+    return this.http.get<HistoryItem[]>('/api/history', { params });
   }
 
   score(ticker: string, horizon: number, threshold: number) {

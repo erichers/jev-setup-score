@@ -20,6 +20,15 @@ public sealed class MarketDataService
         ("NVDA", "NVIDIA", "Equity"),
         ("TSLA", "Tesla", "Equity"),
         ("MSFT", "Microsoft", "Equity"),
+        ("AMZN", "Amazon", "Equity"),
+        ("GOOGL", "Alphabet", "Equity"),
+        ("META", "Meta", "Equity"),
+        ("AMD", "AMD", "Equity"),
+        ("JPM", "JPMorgan Chase", "Equity"),
+        ("NFLX", "Netflix", "Equity"),
+        ("AVGO", "Broadcom", "Equity"),
+        ("COST", "Costco", "Equity"),
+        ("WMT", "Walmart", "Equity"),
     ];
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -53,17 +62,27 @@ public sealed class MarketDataService
 
     public async Task InitializeAsync(CancellationToken ct)
     {
-        await _db.Database.EnsureCreatedAsync(ct);
-        if (!await _db.Tickers.AnyAsync(ct))
+        await _db.Database.MigrateAsync(ct);
+        foreach (var ticker in Universe)
         {
-            _db.Tickers.AddRange(Universe.Select(ticker => new TickerRow
+            var row = await _db.Tickers.FirstOrDefaultAsync(item => item.Symbol == ticker.Symbol, ct);
+            if (row is null)
             {
-                Symbol = ticker.Symbol,
-                Name = ticker.Name,
-                Kind = ticker.Kind,
-            }));
-            await _db.SaveChangesAsync(ct);
+                _db.Tickers.Add(new TickerRow
+                {
+                    Symbol = ticker.Symbol,
+                    Name = ticker.Name,
+                    Kind = ticker.Kind,
+                });
+            }
+            else
+            {
+                row.Name = ticker.Name;
+                row.Kind = ticker.Kind;
+            }
         }
+
+        await _db.SaveChangesAsync(ct);
 
         if (!Directory.Exists(_options.CacheDirectory))
             return;
@@ -194,7 +213,8 @@ public sealed class MarketDataService
             }
         }
 
-        throw new SetupException(404, $"No daily bars for {symbol}. Cached tickers: SPY, QQQ, AAPL, NVDA, TSLA, MSFT.");
+        var names = string.Join(", ", Universe.Select(ticker => ticker.Symbol));
+        throw new SetupException(404, $"No daily bars for {symbol}. Cached tickers: {names}.");
     }
 
     public async Task<string> NameAsync(string symbol, CancellationToken ct)

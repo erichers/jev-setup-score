@@ -51,6 +51,29 @@ public sealed record BacktestDto(
     double StrategyMultiple,
     double BuyHoldMultiple);
 
+public sealed record ExampleOutcome(
+    string Symbol,
+    string Name,
+    string FeatureDate,
+    string LabelDate,
+    int Score,
+    double Probability,
+    double ForwardReturn,
+    bool Up,
+    string Outcome);
+
+public sealed record HistoryItem(
+    long Id,
+    string Symbol,
+    int Horizon,
+    int Threshold,
+    int Score,
+    double Probability,
+    string AsOf,
+    string DataSource,
+    string Summary,
+    string CreatedUtc);
+
 public sealed record ScoreResponse(
     string Ticker,
     string Name,
