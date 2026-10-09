@@ -1,0 +1,22 @@
+bin/
+obj/
+.vs/
+*.user
+*.db
+*.db-shm
+*.db-wal
+.env
+web/node_modules/
+web/dist/
+web/.angular/
+src/JevSetupScore.Api/appsettings.Development.json
+
+# Local config and data: never commit
+appsettings.Production.json
+**/appsettings.Production.json
+.env
+.env.*
+!.env.example
+*.db
+*.db-*
+src/JevSetupScore.Api/data/

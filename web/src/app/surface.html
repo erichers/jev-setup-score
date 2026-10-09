@@ -1,0 +1,29 @@
+<section class="surface-block" aria-labelledby="surface-title">
+  <div class="section-head reveal" appReveal>
+    <h2 id="surface-title">Probability surface</h2>
+    <p>Two standardized inputs. Height is the chance of a higher close. The lines are sample paths. {{ fallback() ? 'A still of the same surface.' : 'Press Rotate, then drag to turn it.' }}</p>
+  </div>
+  @if (ready()) {
+    <div class="stage-bar">
+      <button type="button" class="orbit-toggle btn-soft" [attr.aria-pressed]="orbit()" (click)="toggleOrbit()">{{ orbit() ? 'Done' : 'Rotate' }}</button>
+    </div>
+  }
+  <div class="surface-stage" [class.is-orbit]="orbit()" [class.is-fallback]="fallback()" [class.has-bar]="ready()">
+    <svg
+      #still
+      class="surface-still"
+      role="img"
+      aria-label="Still of the logistic surface from the resting camera"
+      [class.is-hidden]="!fallback()"
+      [attr.aria-hidden]="fallback() ? null : 'true'"
+    ></svg>
+    <div
+      #host
+      class="surface-host"
+      [class.on]="ready()"
+      role="img"
+      [attr.aria-hidden]="fallback() ? 'true' : null"
+      [attr.aria-label]="reduced() ? 'Logistic probability surface, still at its resting angle' : 'Logistic probability surface'"
+    ></div>
+  </div>
+</section>

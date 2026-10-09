@@ -1,0 +1,58 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-CHANGE_ME}
+      MYSQL_DATABASE: jev_setup_score
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - jev-mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 25s
+
+  mysql57:
+    image: mysql:5.7
+    profiles: ["mysql57"]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-CHANGE_ME}
+      MYSQL_DATABASE: jev_setup_score
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3307:3306"
+    volumes:
+      - jev-mysql57:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  jev-setup-score:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      Database__Provider: MySql
+      Database__MySqlVersion: 8.4.0-mysql
+      ConnectionStrings__MySql: Server=mysql;Port=3306;Database=jev_setup_score;User=root;Password=${MYSQL_ROOT_PASSWORD:-CHANGE_ME};CharSet=utf8mb4
+      Data__CacheDirectory: /app/data/cache
+      Data__AllowLiveFetch: "true"
+      Data__HttpTimeoutSeconds: "8"
+      PublicBaseUrl: ""
+      PathBase: ""
+
+volumes:
+  jev-mysql:
+  jev-mysql57:
